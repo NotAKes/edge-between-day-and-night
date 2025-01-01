@@ -24,10 +24,10 @@ class Start_menu(Window):
         self.start_button = self.font.render('Start', True, self.font_color)
         self.screen.fill(self.layour_color)
         self.screen.blit(self.title,
-                    (self.width / 2 - self.title.get_width() / 2, 20))
+                         (self.width / 2 - self.title.get_width() / 2, 20))
         self.screen.blit(self.start_button,
-                    (self.width / 2 - self.start_button.get_width() / 2,
-                     150))
+                         (self.width / 2 - self.start_button.get_width() / 2,
+                          150))
         pygame.display.update()
 
 
@@ -40,13 +40,41 @@ class Level_menu(Window):
         self.screen.fill(self.layour_color)
         self.screen.blit(self.title, (self.width / 2 - self.title.get_width() / 2, 20))
         for i in range(3):
-            self.screen.blit(self.font.render(f'Level {i}', True, self.font_color),
+            self.screen.blit(self.font.render(f'Level {i + 1}', True, self.font_color),
                              (50 + 350 * i, 130))
         pygame.display.update()
 
 
+class Level:
+    def __init__(self, width, height, screen):
+        self.width = width
+        self.height = height
+        self.screen = screen
+        self.layour_color = 'black'
+        self.font_color = 'white'
+        self.font = pygame.font.Font(None, 40)
+
+
+class Level_red(Level):
+    def __init__(self, width, height, screen):
+        super().__init__(width, height, screen)
+
+
+class Level_green(Level):
+    def __init__(self, width, height, screen):
+        super().__init__(width, height, screen)
+
+
+class Level_blue(Level):
+    def __init__(self, width, height, screen):
+        super().__init__(width, height, screen)
+
+
 status_dict = {Start_menu: 'main_menu',
-               Level_menu: 'level_menu'}
+               Level_menu: 'level_menu',
+               Level_red: 'red',
+               Level_green: 'green',
+               Level_blue: 'blue'}
 
 status = 'main_menu'
 if __name__ == '__main__':
