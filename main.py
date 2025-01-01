@@ -24,7 +24,7 @@ class Start_menu(Window):
         self.start_button = self.font.render('Start', True, self.font_color)
         self.screen.fill(self.layour_color)
         self.screen.blit(self.title,
-                    (self.width / 2 - self.title.get_width() / 2, 30))
+                    (self.width / 2 - self.title.get_width() / 2, 20))
         self.screen.blit(self.start_button,
                     (self.width / 2 - self.start_button.get_width() / 2,
                      150))
@@ -36,7 +36,12 @@ class Level_menu(Window):
         super().__init__(width, height, screen)
 
     def render(self):
-
+        self.title = self.font.render('Level map', True, self.font_color)
+        self.screen.fill(self.layour_color)
+        self.screen.blit(self.title, (self.width / 2 - self.title.get_width() / 2, 20))
+        for i in range(3):
+            self.screen.blit(self.font.render(f'Level {i}', True, self.font_color),
+                             (50 + 350 * i, 130))
         pygame.display.update()
 
 
@@ -48,7 +53,7 @@ if __name__ == '__main__':
     pygame.init()
     size = width, height = 900, 400
     screen = pygame.display.set_mode(size)
-    pygame.display.set_caption('TEBDAN')
+    pygame.display.set_caption('The Edge Between Day And Night')
     clock = pygame.time.Clock()
     time_on = False
     ticks = 0
@@ -64,6 +69,7 @@ if __name__ == '__main__':
                 coords = event.pos
                 if coords[0] in range(345, 470) and coords[1] in range(130, 190):
                     current_window = Level_menu(width, height, screen)
+                    current_window.render()
                 else:
                     print(coords)
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE or \
