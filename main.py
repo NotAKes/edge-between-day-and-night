@@ -8,7 +8,8 @@ class Window:
         self.screen = screen
         self.layour_color = 'black'
         self.font_color = 'white'
-        self.font = pygame.font.Font(None, 40)
+        self.font_titles = pygame.font.Font('data/fonts/PixelCode-Bold.ttf', 33)
+        self.font_regular = pygame.font.Font('data/fonts/PixelCode-DemiBold.ttf', 22)
 
     def change_color(self):
         self.layour_color, self.font_color = self.font_color, self.layour_color
@@ -20,14 +21,20 @@ class Start_menu(Window):
         super().__init__(width, height, screen)
 
     def render(self):
-        self.title = self.font.render('The Edge Between Day And Night', True, self.font_color)
-        self.start_button = self.font.render('Start', True, self.font_color)
+
+        self.title = self.font_titles.render('The Edge Between Day And Night', True, self.font_color)
+        self.start_button = self.font_titles.render('Start', True, self.font_color)
+        self.music_disc = pygame.image.load("data/images/music_disc.png")
+        ## TODO сделать запрос на трек
+        self.music_label = self.font_regular.render('Track_Title - Author', True, self.font_color)
         self.screen.fill(self.layour_color)
         self.screen.blit(self.title,
                          (self.width / 2 - self.title.get_width() / 2, 20))
         self.screen.blit(self.start_button,
                          (self.width / 2 - self.start_button.get_width() / 2,
                           150))
+        self.screen.blit(self.music_disc, (10, 350))
+        self.screen.blit(self.music_label, (70, 356))
         pygame.display.update()
 
 
@@ -36,12 +43,12 @@ class Level_menu(Window):
         super().__init__(width, height, screen)
 
     def render(self):
-        self.title = self.font.render('Level map', True, self.font_color)
+        self.title = self.font_titles.render('Level map', True, self.font_color)
         self.screen.fill(self.layour_color)
         self.screen.blit(self.title, (self.width / 2 - self.title.get_width() / 2, 20))
         for i in range(3):
-            self.screen.blit(self.font.render(f'Level {i + 1}', True, self.font_color),
-                             (50 + 350 * i, 130))
+            self.screen.blit(self.font_titles.render(f'Level {i + 1}', True, self.font_color),
+                             (50 + 330 * i, 130))
         pygame.display.update()
 
 
@@ -53,6 +60,7 @@ class Level:
         self.layour_color = 'black'
         self.font_color = 'white'
         self.font = pygame.font.Font(None, 40)
+        self.current_checkpoint = 0
 
 
 class Level_red(Level):
