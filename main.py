@@ -1,5 +1,5 @@
 import pygame
-
+import random
 
 class Window:
     def __init__(self, width, height, screen):
@@ -14,14 +14,47 @@ class Window:
     def change_color(self):
         self.layour_color, self.font_color = self.font_color, self.layour_color
 
+    def get_color(self):
+        return self.font_color
 
-class Start_menu(Window):
 
+class SoundButton(pygame.sprite.Sprite):
+    sound_on_white = pygame.image.load(f"data/images/sound_on_white.png")
+    sound_on_black = pygame.image.load(f"data/images/sound_on_black.png")
+    sound_off_white = pygame.image.load(f"data/images/sound_off_white.png")
+    sound_off_black = pygame.image.load(f"data/images/sound_off_black.png")
+
+    def __init__(self, *group):
+        # НЕОБХОДИМО вызвать конструктор родительского класса Sprite.
+        # Это очень важно!!!
+        super().__init__(*group)
+        self.color = 'white'
+        self.status = 'on'
+        self.image = SoundButton.sound_on_white
+        self.rect = self.image.get_rect()
+        self.rect.x = 10
+        self.rect.y = 500
+
+    def update(self, *args):
+        if args and args[0].type == pygame.KEYDOWN and event.key == pygame.K_e:
+            if self.color == 'white':
+                self.color = 'black'
+            else:
+                self.color = 'white'
+        if args and args[0].type == pygame.MOUSEBUTTONDOWN and \
+                self.rect.collidepoint(args[0].pos):
+            if self.status == 'on':
+                self.status = 'off'
+            else:
+                self.status = 'on'
+        self.image = pygame.image.load(f"data/images/sound_{self.status}_{self.color}.png")
+
+
+class StartMenu(Window):
     def __init__(self, width, height, screen):
         super().__init__(width, height, screen)
 
     def render(self):
-
         self.title = self.font_titles.render('The Edge Between Day And Night', True, self.font_color)
         self.start_button = self.font_titles.render('Start', True, self.font_color)
         self.music_disc = pygame.image.load("data/images/music_disc.png")
@@ -32,13 +65,13 @@ class Start_menu(Window):
                          (self.width / 2 - self.title.get_width() / 2, 20))
         self.screen.blit(self.start_button,
                          (self.width / 2 - self.start_button.get_width() / 2,
-                          150))
-        self.screen.blit(self.music_disc, (10, 350))
-        self.screen.blit(self.music_label, (70, 356))
+                          200))
+        self.screen.blit(self.music_disc, (10, 550))
+        self.screen.blit(self.music_label, (70, 556))
         pygame.display.update()
 
 
-class Level_menu(Window):
+class LevelMenu(Window):
     def __init__(self, width, height, screen):
         super().__init__(width, height, screen)
 
@@ -63,59 +96,66 @@ class Level:
         self.current_checkpoint = 0
 
 
-class Level_red(Level):
+class LevelRed(Level):
     def __init__(self, width, height, screen):
         super().__init__(width, height, screen)
 
 
-class Level_green(Level):
+class LevelGreen(Level):
     def __init__(self, width, height, screen):
         super().__init__(width, height, screen)
 
 
-class Level_blue(Level):
+class LevelBlue(Level):
     def __init__(self, width, height, screen):
         super().__init__(width, height, screen)
 
 
-status_dict = {Start_menu: 'main_menu',
-               Level_menu: 'level_menu',
-               Level_red: 'red',
-               Level_green: 'green',
-               Level_blue: 'blue'}
+status_dict = {StartMenu: 'main_menu',
+               LevelMenu: 'level_menu',
+               LevelRed: 'red',
+               LevelGreen: 'green',
+               LevelBlue: 'blue'}
 
+all_sprites = pygame.sprite.Group()
 status = 'main_menu'
 if __name__ == '__main__':
     pygame.init()
-    size = width, height = 900, 400
+    size = width, height = 900, 600
     screen = pygame.display.set_mode(size)
     pygame.display.set_caption('The Edge Between Day And Night')
     clock = pygame.time.Clock()
     time_on = False
     ticks = 0
     speed = 10
-    current_window = Start_menu(width, height, screen)
+    current_window = StartMenu(width, height, screen)
     current_window.render()
+    SoundButton(all_sprites)
     running = True
     while running:
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and status == 'main_menu':
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 coords = event.pos
-                if coords[0] in range(345, 470) and coords[1] in range(130, 190):
-                    current_window = Level_menu(width, height, screen)
+                if coords[0] in range(345, 470) and coords[1] in range(190, 260) and status == 'main_menu':
+                    current_window = LevelMenu(width, height, screen)
                     current_window.render()
                 else:
                     print(coords)
+                all_sprites.update(event)
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE or \
                     event.type == pygame.MOUSEBUTTONDOWN and event.button == 2:
                 pass
             if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
                 current_window.change_color()
+                all_sprites.update(event)
                 current_window.render()
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 5:
                 pass
+        all_sprites.draw(screen)
+        all_sprites.update()
         status = status_dict[type(current_window)]
         pygame.display.flip()
         clock.tick(100)
