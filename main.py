@@ -1,5 +1,6 @@
 import pygame
-import random
+from dbreader import DBreader
+
 
 class Window:
     def __init__(self, width, height, screen):
@@ -14,8 +15,39 @@ class Window:
     def change_color(self):
         self.layour_color, self.font_color = self.font_color, self.layour_color
 
-    def get_color(self):
-        return self.font_color
+
+class Button(pygame.sprite.Sprite):
+    def __init__(self, *group):
+        super().__init__(*group)
+        self.font_color = 'white'
+        self.layour_color = 'black'
+        self.font_titles = pygame.font.Font('data/fonts/PixelCode-Bold.ttf', 33)
+        self.font_regular = pygame.font.Font('data/fonts/PixelCode-DemiBold.ttf', 22)
+
+    def update(self):
+        pass
+
+
+class StartButton(Button):
+    def __init__(self, *group):
+        super().__init__(*group)
+        self.image = pygame.Surface([220, 43])
+        self.draw()
+        self.rect = self.image.get_rect()
+        self.rect.x = 330
+        self.rect.y = 200
+
+    def draw(self):
+        self.text = self.font_titles.render('Start Game', True, self.font_color, self.layour_color)
+        self.image.blit(self.text, self.text.get_rect())
+
+    def update(self, *args, **kwargs):
+        if args and args[0].type == pygame.MOUSEBUTTONDOWN and \
+                self.rect.collidepoint(args[0].pos):
+            return True
+        if args and args[0].type == pygame.KEYDOWN and event.key == pygame.K_e:
+            self.layour_color, self.font_color = self.font_color, self.layour_color
+        self.draw()
 
 
 class SoundButton(pygame.sprite.Sprite):
@@ -25,8 +57,6 @@ class SoundButton(pygame.sprite.Sprite):
     sound_off_black = pygame.image.load(f"data/images/sound_off_black.png")
 
     def __init__(self, *group):
-        # НЕОБХОДИМО вызвать конструктор родительского класса Sprite.
-        # Это очень важно!!!
         super().__init__(*group)
         self.color = 'white'
         self.status = 'on'
@@ -56,16 +86,12 @@ class StartMenu(Window):
 
     def render(self):
         self.title = self.font_titles.render('The Edge Between Day And Night', True, self.font_color)
-        self.start_button = self.font_titles.render('Start', True, self.font_color)
         self.music_disc = pygame.image.load("data/images/music_disc.png")
         ## TODO сделать запрос на трек
         self.music_label = self.font_regular.render('Track_Title - Author', True, self.font_color)
         self.screen.fill(self.layour_color)
         self.screen.blit(self.title,
                          (self.width / 2 - self.title.get_width() / 2, 20))
-        self.screen.blit(self.start_button,
-                         (self.width / 2 - self.start_button.get_width() / 2,
-                          200))
         self.screen.blit(self.music_disc, (10, 550))
         self.screen.blit(self.music_label, (70, 556))
         pygame.display.update()
@@ -131,19 +157,19 @@ if __name__ == '__main__':
     current_window = StartMenu(width, height, screen)
     current_window.render()
     SoundButton(all_sprites)
+    start_btn = StartButton(all_sprites)
     running = True
     while running:
-
+        all_sprites.draw(screen)
+        all_sprites.update()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 coords = event.pos
-                if coords[0] in range(345, 470) and coords[1] in range(190, 260) and status == 'main_menu':
+                if start_btn.update(event):
                     current_window = LevelMenu(width, height, screen)
                     current_window.render()
-                else:
-                    print(coords)
                 all_sprites.update(event)
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE or \
                     event.type == pygame.MOUSEBUTTONDOWN and event.button == 2:
@@ -154,8 +180,6 @@ if __name__ == '__main__':
                 current_window.render()
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 5:
                 pass
-        all_sprites.draw(screen)
-        all_sprites.update()
         status = status_dict[type(current_window)]
         pygame.display.flip()
         clock.tick(100)
