@@ -21,32 +21,56 @@ class Button(pygame.sprite.Sprite):
         super().__init__(*group)
         self.font_color = 'white'
         self.layour_color = 'black'
+        self.text = ''
         self.font_titles = pygame.font.Font('data/fonts/PixelCode-Bold.ttf', 33)
         self.font_regular = pygame.font.Font('data/fonts/PixelCode-DemiBold.ttf', 22)
 
-    def update(self):
-        pass
-
-
-class StartButton(Button):
-    def __init__(self, *group):
-        super().__init__(*group)
-        self.image = pygame.Surface([220, 43])
-        self.draw()
+    def get_image(self):
+        self.image = pygame.Surface([0, 0])
         self.rect = self.image.get_rect()
-        self.rect.x = 330
-        self.rect.y = 200
+        self.rect.x = 0
+        self.rect.y = 0
 
     def draw(self):
-        self.text = self.font_titles.render('Start Game', True, self.font_color, self.layour_color)
-        self.image.blit(self.text, self.text.get_rect())
+        self.text_to_render = self.font_titles.render(self.text, True, self.font_color, self.layour_color)
+        self.image.blit(self.text_to_render, self.text_to_render.get_rect())
 
-    def update(self, *args, **kwargs):
+    def update(self, *args):
         if args and args[0].type == pygame.MOUSEBUTTONDOWN and \
                 self.rect.collidepoint(args[0].pos):
             return True
         if args and args[0].type == pygame.KEYDOWN and event.key == pygame.K_e:
             self.layour_color, self.font_color = self.font_color, self.layour_color
+        self.draw()
+
+
+class StartButton(Button):
+    def __init__(self, *group):
+        super().__init__(*group)
+        self.text = 'Start Game'
+        self.get_image()
+
+    def get_image(self):
+        self.image = pygame.Surface([220, 43])
+        self.rect = self.image.get_rect()
+        self.rect.x = 330
+        self.rect.y = 200
+        self.draw()
+
+
+class LevelBtn(Button):
+    def __init__(self, number ,*group):
+        super().__init__(*group)
+        self.number = number
+        print(self.number)
+        self.text = f'Level {number}'
+        self.get_image()
+
+    def get_image(self):
+        self.image = pygame.Surface([154, 43])
+        self.rect = self.image.get_rect()
+        self.rect.x = 120 + 250 * (self.number - 1)
+        self.rect.y = 140
         self.draw()
 
 
@@ -105,10 +129,11 @@ class LevelMenu(Window):
         self.title = self.font_titles.render('Level map', True, self.font_color)
         self.screen.fill(self.layour_color)
         self.screen.blit(self.title, (self.width / 2 - self.title.get_width() / 2, 20))
-        for i in range(3):
-            self.screen.blit(self.font_titles.render(f'Level {i + 1}', True, self.font_color),
-                             (50 + 330 * i, 130))
         pygame.display.update()
+
+
+class PauseMenu(Window):
+    pass
 
 
 class Level:
@@ -122,6 +147,11 @@ class Level:
         self.current_checkpoint = 0
 
 
+class LevelBlack(Level):
+    def __init__(self, width, height, screen):
+        super().__init__(width, height, screen)
+
+
 class LevelRed(Level):
     def __init__(self, width, height, screen):
         super().__init__(width, height, screen)
@@ -132,18 +162,15 @@ class LevelGreen(Level):
         super().__init__(width, height, screen)
 
 
-class LevelBlue(Level):
-    def __init__(self, width, height, screen):
-        super().__init__(width, height, screen)
-
-
 status_dict = {StartMenu: 'main_menu',
                LevelMenu: 'level_menu',
                LevelRed: 'red',
                LevelGreen: 'green',
-               LevelBlue: 'blue'}
+               LevelBlack: 'black'}
 
-all_sprites = pygame.sprite.Group()
+main_menu_group = pygame.sprite.Group()
+level_menu_group = pygame.sprite.Group()
+
 status = 'main_menu'
 if __name__ == '__main__':
     pygame.init()
@@ -154,14 +181,17 @@ if __name__ == '__main__':
     time_on = False
     ticks = 0
     speed = 10
+    for i in range(1, 4):
+        LevelBtn(i, level_menu_group)
     current_window = StartMenu(width, height, screen)
     current_window.render()
-    SoundButton(all_sprites)
-    start_btn = StartButton(all_sprites)
+    SoundButton(main_menu_group, level_menu_group)
+    start_btn = StartButton(main_menu_group)
+    current_group = main_menu_group
     running = True
     while running:
-        all_sprites.draw(screen)
-        all_sprites.update()
+        current_group.draw(screen)
+        current_group.update()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -170,13 +200,14 @@ if __name__ == '__main__':
                 if start_btn.update(event):
                     current_window = LevelMenu(width, height, screen)
                     current_window.render()
-                all_sprites.update(event)
+                    current_group = level_menu_group
+                current_group.update(event)
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE or \
                     event.type == pygame.MOUSEBUTTONDOWN and event.button == 2:
                 pass
             if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
                 current_window.change_color()
-                all_sprites.update(event)
+                current_group.update(event)
                 current_window.render()
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 5:
                 pass
