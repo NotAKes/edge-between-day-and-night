@@ -24,7 +24,6 @@ class Button(pygame.sprite.Sprite):
         self.text = ''
         self.font_titles = pygame.font.Font('data/fonts/PixelCode-Bold.ttf', 33)
         self.font_regular = pygame.font.Font('data/fonts/PixelCode-DemiBold.ttf', 22)
-        self.get_image()
 
     def get_image(self):
         self.image = pygame.Surface([0, 0])
@@ -60,12 +59,18 @@ class StartButton(Button):
 
 
 class LevelBtn(Button):
-    def __init__(self, *group):
+    def __init__(self, number ,*group):
         super().__init__(*group)
-        self.image = pygame.Surface([220, 43])
-        self.text = 'Level #int'
-        self.rect.x = 330
-        self.rect.y = 200
+        self.number = number
+        print(self.number)
+        self.text = f'Level {number}'
+        self.get_image()
+
+    def get_image(self):
+        self.image = pygame.Surface([154, 43])
+        self.rect = self.image.get_rect()
+        self.rect.x = 120 + 250 * (self.number - 1)
+        self.rect.y = 140
         self.draw()
 
 
@@ -176,6 +181,8 @@ if __name__ == '__main__':
     time_on = False
     ticks = 0
     speed = 10
+    for i in range(1, 4):
+        LevelBtn(i, level_menu_group)
     current_window = StartMenu(width, height, screen)
     current_window.render()
     SoundButton(main_menu_group, level_menu_group)
