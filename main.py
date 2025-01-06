@@ -91,7 +91,10 @@ class Player(pygame.sprite.Sprite):
         self.velocity = 5
 
     def update(self, move_x, move_y):
-        pass
+        self.rect.x += move_x
+        self.rect.y += move_y
+        self.rect.x = max(0, min(self.rect.x, 100 - self.rect.width))
+        self.rect.y = max(0, min(self.rect.y, 100 - self.rect.height))
 
     def drop_shadow(self):
         shadow_offset = (self.rect.x + 10, self.rect.y + 10)
@@ -194,7 +197,6 @@ pause_menu_group = pygame.sprite.Group()
 black_level_group = pygame.sprite.Group()
 red_level_group = pygame.sprite.Group()
 green_level_group = pygame.sprite.Group()
-
 status_dict = {StartMenu: main_menu_group,
                LevelMenu: level_menu_group,
                PauseMenu: pause_menu_group,
@@ -211,15 +213,16 @@ if __name__ == '__main__':
     time_on = False
     ticks = 0
     speed = 10
+
     for i in range(1, 4):
         LevelBtn(i, level_menu_group)
-
     # FIXME
     current_window = previous_window = StartMenu(width, height, screen)
     current_group = previous_group = main_menu_group
     current_window.render()
     start_btn = StartButton(main_menu_group)
     SoundButton(main_menu_group, level_menu_group)
+
     running = True
     while running:
         current_group.update(current_window.font_color, current_window.layour_color)
@@ -228,32 +231,38 @@ if __name__ == '__main__':
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 coords = event.pos
                 # FIXME
                 for sprite in changeable_buttons:
                     if (sprite.update(current_window.font_color, current_window.layour_color, event)
                             and sprite.update('', '', event)[0]):
+
                         previous_window = current_window
-                        # смена окон с корректировкой цвета всех спрайтов
                         current_window = sprite.update('', '', event)[1](width, height, screen)
                         current_window.render()
                         previous_group, current_group = current_group, status_dict[type(current_window)]
                         changeable_buttons = [i for i in current_group.sprites() if isinstance(i, Button)]
                     current_group.update(current_window.font_color, current_window.layour_color, event)
+
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE or \
                     event.type == pygame.MOUSEBUTTONDOWN and event.button == 2:
                 pass
+
             if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
                 current_window.change_color()
                 current_group.update(current_window.font_color, current_window.layour_color, event)
                 current_window.render()
+
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 current_window, current_group = previous_window, previous_group
                 current_group.update(current_window.font_color, current_window.layour_color, event)
                 current_window.render()
+
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 5:
                 pass
+
         pygame.display.flip()
         clock.tick(100)
         ticks += 1
