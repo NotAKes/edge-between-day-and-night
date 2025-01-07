@@ -7,8 +7,8 @@ class Window:
         self.width = width
         self.height = height
         self.screen = screen
-        self.layour_color = 'black'
-        self.font_color = 'white'
+        self.layour_color = 'white'
+        self.font_color = 'black'
         self.font_titles = pygame.font.Font('data/fonts/PixelCode-Bold.ttf', 33)
         self.font_regular = pygame.font.Font('data/fonts/PixelCode-DemiBold.ttf', 22)
 
@@ -60,7 +60,10 @@ class Level(Window):
 class LevelBlack(Level):
     def __init__(self, width, height, screen):
         super().__init__(width, height, screen)
-        print('black')
+        self.screen = screen
+
+    def render(self):
+        self.screen.fill(self.layour_color)
 
 
 class LevelRed(Level):
@@ -78,23 +81,21 @@ class LevelGreen(Level):
 class Player(pygame.sprite.Sprite):
     white_heart = pygame.image.load(f"data/images/textures/player/white_heart.png")
     black_heart = pygame.image.load(f"data/images/textures/player/black_heart.png")
-    red = pygame.image.load(f"data/images/textures/player/red_heart.png")
+    red_heart = pygame.image.load(f"data/images/textures/player/red_heart.png")
 
     def __init__(self, *group):
         super().__init__(*group)
-        self.world_mode = 'white'
         self.font_titles = pygame.font.Font('data/fonts/PixelCode-Bold.ttf', 33)
         self.font_regular = pygame.font.Font('data/fonts/PixelCode-DemiBold.ttf', 22)
         self.image = pygame.Surface((40, 60))
-        self.image.fill('blue')
         self.rect = self.image.get_rect()
         self.velocity = 5
 
-    def update(self, move_x, move_y):
-        self.rect.x += move_x
-        self.rect.y += move_y
-        self.rect.x = max(0, min(self.rect.x, 100 - self.rect.width))
-        self.rect.y = max(0, min(self.rect.y, 100 - self.rect.height))
+    def update(self, font_color, layour_color, *args):
+        if layour_color == 'black':
+            self.image.fill('light blue')
+        else:
+            self.image.fill('blue')
 
     def drop_shadow(self):
         shadow_offset = (self.rect.x + 10, self.rect.y + 10)
@@ -127,6 +128,7 @@ class Button(pygame.sprite.Sprite):
             return [True, self.next_window]
         self.layour_color, self.font_color = layour_color, font_color
         self.draw()
+        return [False]
 
 
 class StartButton(Button):
@@ -212,19 +214,20 @@ if __name__ == '__main__':
     clock = pygame.time.Clock()
     time_on = False
     ticks = 0
-    speed = 10
 
     for i in range(1, 4):
         LevelBtn(i, level_menu_group)
-    # FIXME
+    SoundButton(main_menu_group, level_menu_group)
+    player = Player(black_level_group, green_level_group, red_level_group)
+
     current_window = previous_window = StartMenu(width, height, screen)
     current_group = previous_group = main_menu_group
-    current_window.render()
-    start_btn = StartButton(main_menu_group)
-    SoundButton(main_menu_group, level_menu_group)
 
+    StartButton(main_menu_group)
+    current_window.render()
     running = True
     while running:
+
         current_group.update(current_window.font_color, current_window.layour_color)
         current_group.draw(screen)
         changeable_buttons = [i for i in current_group.sprites() if isinstance(i, Button)]
@@ -236,19 +239,13 @@ if __name__ == '__main__':
                 coords = event.pos
                 # FIXME
                 for sprite in changeable_buttons:
-                    if (sprite.update(current_window.font_color, current_window.layour_color, event)
-                            and sprite.update('', '', event)[0]):
-
+                    if sprite.update('white', 'white', event)[0]:
                         previous_window = current_window
                         current_window = sprite.update('', '', event)[1](width, height, screen)
-                        current_window.render()
                         previous_group, current_group = current_group, status_dict[type(current_window)]
                         changeable_buttons = [i for i in current_group.sprites() if isinstance(i, Button)]
                     current_group.update(current_window.font_color, current_window.layour_color, event)
-
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE or \
-                    event.type == pygame.MOUSEBUTTONDOWN and event.button == 2:
-                pass
+                    current_window.render()
 
             if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
                 current_window.change_color()
@@ -260,10 +257,21 @@ if __name__ == '__main__':
                 current_group.update(current_window.font_color, current_window.layour_color, event)
                 current_window.render()
 
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 5:
-                pass
+            if any(pygame.key.get_pressed()) and isinstance(current_window, Level):
+                if pygame.key.get_pressed()[pygame.K_a]:
+                    player.rect.x -= player.velocity
+                if pygame.key.get_pressed()[pygame.K_d]:
+                    player.rect.x += player.velocity
+                if pygame.key.get_pressed()[pygame.K_w]:
+                    player.rect.y -= player.velocity
+                if pygame.key.get_pressed()[pygame.K_s]:
+                    player.rect.y += player.velocity
+                if pygame.key.get_pressed()[pygame.K_SPACE]:
+                    pass
+                current_window.render()
+                current_group.draw(screen)
 
-        pygame.display.flip()
-        clock.tick(100)
+        pygame.display.update()
+        clock.tick(60)
         ticks += 1
     pygame.quit()
