@@ -70,12 +70,22 @@ class LevelRed(Level):
     def __init__(self, width, height, screen):
         super().__init__(width, height, screen)
         print('red')
+        self.layour_color = 'pink'
+        self.font_color = 'dark red'
+
+    def render(self):
+        self.screen.fill(self.layour_color)
 
 
 class LevelGreen(Level):
     def __init__(self, width, height, screen):
         super().__init__(width, height, screen)
         print('green')
+        self.layour_color = 'light green'
+        self.font_color = 'dark green'
+
+    def render(self):
+        self.screen.fill(self.layour_color)
 
 
 class Player(pygame.sprite.Sprite):
@@ -92,14 +102,14 @@ class Player(pygame.sprite.Sprite):
         self.velocity = 5
 
     def update(self, font_color, layour_color, *args):
-        if layour_color == 'black':
+        if layour_color in ['black', 'dark red', 'dark green']:
             self.image.fill('light blue')
         else:
             self.image.fill('blue')
 
     def drop_shadow(self):
         shadow_offset = (self.rect.x + 10, self.rect.y + 10)
-        pygame.draw.rect(screen, 'dark_blue', (shadow_offset[0], shadow_offset[1], self.rect.width, self.rect.height))
+        pygame.draw.rect(screen, 'dark blue', (shadow_offset[0], shadow_offset[1], self.rect.width, self.rect.height))
 
 
 class Button(pygame.sprite.Sprite):
