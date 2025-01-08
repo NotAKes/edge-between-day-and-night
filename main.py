@@ -110,6 +110,7 @@ class Player(pygame.sprite.Sprite):
 
 
 class PlayerBar(pygame.sprite.Sprite):
+    no_heart = pygame.image.load(f"data/images/textures/player/no_heart.png")
     white_heart = pygame.image.load(f"data/images/textures/player/white_heart.png")
     black_heart = pygame.image.load(f"data/images/textures/player/black_heart.png")
     red_heart = pygame.image.load(f"data/images/textures/player/red_heart.png")
