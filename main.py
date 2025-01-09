@@ -89,9 +89,11 @@ class LevelGreen(Level):
 
 
 class Player(pygame.sprite.Sprite):
+    ghost = pygame.image.load(f"data/images/textures/player/ghost.png")
+
     def __init__(self, *group):
         super().__init__(*group)
-        self.image = pygame.Surface((40, 60))
+        self.image = pygame.transform.scale(Player.ghost, (96, 96))
         self.rect = self.image.get_rect()
         self.rect.x = 20
         self.rect.y = 500
@@ -99,14 +101,11 @@ class Player(pygame.sprite.Sprite):
         self.hearts_remain = 2
 
     def update(self, font_color, layour_color, *args):
-        if layour_color in ['black', 'dark red', 'dark green']:
-            self.image.fill('light blue')
-        else:
-            self.image.fill('blue')
-
-    def drop_shadow(self):
-        shadow_offset = (self.rect.x + 10, self.rect.y + 10)
-        pygame.draw.rect(screen, 'dark blue', (shadow_offset[0], shadow_offset[1], self.rect.width, self.rect.height))
+        # if layour_color in ['black', 'dark red', 'dark green']:
+        #     self.image.fill('light blue')
+        # else:
+        #     self.image.fill('blue')
+        pass
 
 
 class PlayerBar(pygame.sprite.Sprite):
@@ -115,7 +114,7 @@ class PlayerBar(pygame.sprite.Sprite):
     black_heart = pygame.image.load(f"data/images/textures/player/black_heart.png")
     red_heart = pygame.image.load(f"data/images/textures/player/red_heart.png")
 
-    def __init__(self,number ,*group):
+    def __init__(self, number, *group):
         super().__init__(*group)
 
         self.image = pygame.transform.scale(PlayerBar.black_heart, (64, 64))
@@ -124,13 +123,16 @@ class PlayerBar(pygame.sprite.Sprite):
         self.rect.y = 5
         self.is_active = True
 
-
     def update(self, font_color, layour_color, *args):
+        if not self.is_active:
+            self.image = pygame.transform.scale(PlayerBar.no_heart, (64, 64))
+            return
 
         if layour_color in ['black', 'dark red', 'dark green']:
             self.image = pygame.transform.scale(PlayerBar.white_heart, (64, 64))
         else:
             self.image = pygame.transform.scale(PlayerBar.black_heart, (64, 64))
+
 
 class Button(pygame.sprite.Sprite):
     def __init__(self, *group):
@@ -256,9 +258,9 @@ if __name__ == '__main__':
     StartButton(main_menu_group)
     current_window.render()
     running = True
+    for i in range(player.hearts_remain):
+        PlayerBar(i, black_level_group, green_level_group, red_level_group)
     while running:
-        for i in range(player.hearts_remain):
-            PlayerBar(i, black_level_group, green_level_group, red_level_group)
         current_group.update(current_window.font_color, current_window.layour_color)
         current_group.draw(screen)
         changeable_buttons = [i for i in current_group.sprites() if isinstance(i, Button)]
@@ -297,9 +299,9 @@ if __name__ == '__main__':
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                     for i in range(1, player.velocity * 2 + 1):
                         if i <= (player.velocity * 2 + 1) // 2:
-                            player.rect.y -= (player.velocity ** 2) * 5
+                            player.rect.y -= (player.velocity ** 1.5) * 5
                         else:
-                            player.rect.y += (player.velocity ** 2) * 5
+                            player.rect.y += (player.velocity ** 1.5) * 5
                         pygame.time.delay(40)
                         current_window.render()
                         current_group.draw(screen)
