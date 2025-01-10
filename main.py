@@ -48,7 +48,14 @@ class LevelMenu(Window):
 
 
 class PauseMenu(Window):
-    pass
+    def __init__(self, width, height, screen):
+        super().__init__(width, height, screen)
+
+    def render(self):
+        self.title = self.font_titles.render('Pause', True, self.font_color)
+        self.screen.fill(self.layour_color)
+        self.screen.blit(self.title, (self.width / 2 - self.title.get_width() / 2, 20))
+        pygame.display.update()
 
 
 class Level(Window):
@@ -163,6 +170,36 @@ class Button(pygame.sprite.Sprite):
         return [False]
 
 
+class ToMenuButton(Button):
+    def __init__(self, *group):
+        super().__init__(*group)
+        self.text = 'Back to menu'
+        self.get_image()
+        self.next_window = StartMenu
+
+    def get_image(self):
+        self.image = pygame.Surface([310, 43])
+        self.rect = self.image.get_rect()
+        self.rect.x = 495
+        self.rect.y = 600
+        self.draw()
+
+
+class RerunToLevel(Button):
+    def __init__(self, *group):
+        super().__init__(*group)
+        self.text = 'Resume'
+        self.get_image()
+        self.next_window = StartMenu
+
+    def get_image(self):
+        self.image = pygame.Surface([155, 43])
+        self.rect = self.image.get_rect()
+        self.rect.x = 565
+        self.rect.y = 150
+        self.draw()
+
+
 class StartButton(Button):
     def __init__(self, *group):
         super().__init__(*group)
@@ -249,8 +286,10 @@ if __name__ == '__main__':
 
     for i in range(1, 4):
         LevelBtn(i, level_menu_group)
+    ToMenuButton(level_menu_group, pause_menu_group)
     SoundButton(main_menu_group, level_menu_group)
     player = Player(black_level_group, green_level_group, red_level_group)
+    RerunToLevel(pause_menu_group)
 
     current_window = previous_window = StartMenu(width, height, screen)
     current_group = previous_group = main_menu_group
