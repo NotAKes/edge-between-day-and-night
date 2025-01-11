@@ -51,6 +51,7 @@ class PauseMenu(Window):
     def __init__(self, width, height, screen):
         super().__init__(width, height, screen)
 
+
     def render(self):
         self.title = self.font_titles.render('Pause', True, self.font_color)
         self.screen.fill(self.layour_color)
@@ -62,15 +63,17 @@ class Level(Window):
     def __init__(self, width, height, screen):
         super().__init__(width, height, screen)
         self.current_checkpoint = 0
+        self.dark_mode = True
+
+    def render(self):
+        self.screen.fill(self.layour_color)
+        self.dark_mode = not self.dark_mode
 
 
 class LevelBlack(Level):
     def __init__(self, width, height, screen):
         super().__init__(width, height, screen)
         self.screen = screen
-
-    def render(self):
-        self.screen.fill(self.layour_color)
 
 
 class LevelRed(Level):
@@ -80,9 +83,6 @@ class LevelRed(Level):
         self.layour_color = 'pink'
         self.font_color = 'dark red'
 
-    def render(self):
-        self.screen.fill(self.layour_color)
-
 
 class LevelGreen(Level):
     def __init__(self, width, height, screen):
@@ -90,9 +90,6 @@ class LevelGreen(Level):
         print('green')
         self.layour_color = 'light green'
         self.font_color = 'dark green'
-
-    def render(self):
-        self.screen.fill(self.layour_color)
 
 
 class Player(pygame.sprite.Sprite):
@@ -170,6 +167,18 @@ class Button(pygame.sprite.Sprite):
         return [False]
 
 
+class ToPauseButton(Button):
+    pause_img = pygame.image.load("data/images/pause.png")
+
+    def __init__(self, *group):
+        super().__init__(*group)
+        self.image = ToPauseButton.pause_img
+        self.rect = self.image.get_rect()
+        self.rect.x = 1200
+        self.rect.y = 10
+        self.next_window = PauseMenu
+
+
 class ToMenuButton(Button):
     def __init__(self, *group):
         super().__init__(*group)
@@ -185,12 +194,12 @@ class ToMenuButton(Button):
         self.draw()
 
 
-class RerunToLevel(Button):
+class RerunToLevelButton(Button):
     def __init__(self, *group):
         super().__init__(*group)
         self.text = 'Resume'
         self.get_image()
-        self.next_window = StartMenu
+        self.next_window = Level
 
     def get_image(self):
         self.image = pygame.Surface([155, 43])
@@ -215,7 +224,7 @@ class StartButton(Button):
         self.draw()
 
 
-class LevelBtn(Button):
+class LevelButton(Button):
     def __init__(self, number, *group):
         super().__init__(*group)
         self.number = number
@@ -285,11 +294,13 @@ if __name__ == '__main__':
     ticks = 0
 
     for i in range(1, 4):
-        LevelBtn(i, level_menu_group)
+        LevelButton(i, level_menu_group)
     ToMenuButton(level_menu_group, pause_menu_group)
-    SoundButton(main_menu_group, level_menu_group)
+    SoundButton(main_menu_group, level_menu_group, pause_menu_group)
     player = Player(black_level_group, green_level_group, red_level_group)
-    RerunToLevel(pause_menu_group)
+    return_to_level = RerunToLevelButton(pause_menu_group)
+    ToMenuButton(pause_menu_group)
+    ToPauseButton(black_level_group, green_level_group, red_level_group)
 
     current_window = previous_window = StartMenu(width, height, screen)
     current_group = previous_group = main_menu_group
@@ -300,6 +311,10 @@ if __name__ == '__main__':
     for i in range(player.hearts_remain):
         PlayerBar(i, black_level_group, green_level_group, red_level_group)
     while running:
+
+        if isinstance(current_window, Level):
+            return_to_level.next_window = type(current_window)
+
         current_group.update(current_window.font_color, current_window.layour_color)
         current_group.draw(screen)
         changeable_buttons = [i for i in current_group.sprites() if isinstance(i, Button)]
@@ -325,7 +340,8 @@ if __name__ == '__main__':
                 current_group.update(current_window.font_color, current_window.layour_color, event)
                 current_window.render()
 
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE and previous_window != current_window:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE and previous_window != current_window and \
+                    not isinstance(current_window, Level):
                 current_window, current_group = previous_window, previous_group
                 current_window.render()
                 current_group.update(current_window.font_color, current_window.layour_color, event)
