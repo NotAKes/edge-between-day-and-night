@@ -1,5 +1,41 @@
 import pygame
 from dbreader import DBreader
+import os
+import sys
+
+database = DBreader()
+
+
+def load_image(name, color_key=None):
+    fullname = os.path.join('data', name)
+    try:
+        image = pygame.image.load(fullname)
+    except pygame.error as message:
+        print('Не удаётся загрузить:', name)
+        raise SystemExit(message)
+    if color_key is not None:
+        if color_key == -1:
+            color_key = image.get_at((0, 0))
+        image.set_colorkey(color_key)
+    return image
+
+
+pygame.init()
+screen_size = (400, 400)
+screen = pygame.display.set_mode(screen_size)
+FPS = 50
+
+tile_images = {
+    'wall_black': pygame.transform.scale(load_image('images/textures/black_tile.png'), (80, 80)),
+    'wall_white': pygame.transform.scale(load_image('images/textures/white_tile.png'), (80, 80)),
+    'wall_dark_red': pygame.transform.scale(load_image('images/textures/dark_red_tile.png'), (80, 80)),
+    'wall_light_red': pygame.transform.scale(load_image('images/textures/light_red_tile.png'), (80, 80)),
+    'wall_dark_green': pygame.transform.scale(load_image('images/textures/dark_green_tile.png'), (80, 80)),
+    'wall_light_green': pygame.transform.scale(load_image('images/textures/light_green_tile.png'), (80, 80)),
+    'empty': pygame.transform.scale(load_image('images/textures/grass.png'), (80, 80))
+}
+
+tile_width = tile_height = 80
 
 
 class Window:
@@ -25,7 +61,7 @@ class StartMenu(Window):
 
     def render(self):
         self.title = self.font_titles.render('Colorless', True, self.font_color)
-        self.music_disc = pygame.image.load("data/images/music_disc.png")
+        self.music_disc = load_image("images/music_disc.png")
         ## TODO сделать запрос на трек
         self.music_label = self.font_regular.render('Track_Title - Author', True, self.font_color)
         self.screen.fill(self.layour_color)
@@ -48,94 +84,150 @@ class LevelMenu(Window):
 
 
 class PauseMenu(Window):
-    def __init__(self, width, height, screen):
-        super().__init__(width, height, screen)
-
-
-    def render(self):
-        self.title = self.font_titles.render('Pause', True, self.font_color)
-        self.screen.fill(self.layour_color)
-        self.screen.blit(self.title, (self.width / 2 - self.title.get_width() / 2, 20))
-        pygame.display.update()
+    pass
 
 
 class Level(Window):
     def __init__(self, width, height, screen):
         super().__init__(width, height, screen)
         self.current_checkpoint = 0
-        self.dark_mode = True
+        self.map_level = []
+        self.level_name = ''
+        self.tile_empty = 'empty'
+        self.wall_color = 'wall_black'
+        self.font_color = 'wall_white'
 
-    def render(self):
-        self.screen.fill(self.layour_color)
-        self.dark_mode = not self.dark_mode
+    def load_level(self, maps):
+        level_map = [line.strip() for line in maps.split('\n')]
+        max_width = max(map(len, level_map))
+        self.map_level = list(map(lambda x: list(x.ljust(max_width, '.')), level_map))
+
+    def change_color(self):
+        # TODO доделать
+        self.wall_color, self.font_color = self.font_color, self.wall_color
+        for y in range(len(self.map_level)):
+            for x in range(len(self.map_level[y])):
+                if self.map_level[y][x] == '#':
+                    Tile(self.wall_color, x, y)
+
+    # чтение и генерация уровней
+    def generate_level(self):
+        new_player, x, y = None, None, None
+        for y in range(len(self.map_level)):
+            for x in range(len(self.map_level[y])):
+                if self.map_level[y][x] == '.':
+                    Tile(self.tile_empty, x, y)
+                elif self.map_level[y][x] == '#':
+                    Tile(self.wall_color, x, y)
+                elif self.map_level[y][x] == '@':
+                    Tile(self.tile_empty, x, y)
+                    new_player = Player(x, y)
+                    self.map_level[y][x] = "."
+        return new_player, x, y
 
 
 class LevelBlack(Level):
     def __init__(self, width, height, screen):
         super().__init__(width, height, screen)
         self.screen = screen
+        self.tile_empty = 'empty'
+        self.wall_color = 'wall_black'
+        self.font_color = 'wall_white'
+        self.level_name = database.get_black_map()
+        self.load_level(self.level_name)
+
+    def render(self):
+        self.screen.fill(self.layour_color)
 
 
 class LevelRed(Level):
     def __init__(self, width, height, screen):
         super().__init__(width, height, screen)
-        print('red')
-        self.layour_color = 'pink'
-        self.font_color = 'dark red'
+        self.screen = screen
+
+        self.tile_empty = 'empty'
+        self.wall_color = 'wall_dark_red'
+        self.font_color = 'wall_light_red'
+        self.level_name = database.get_black_map()
+        self.load_level(self.level_name)
+
+    def render(self):
+        self.screen.fill(self.layour_color)
 
 
 class LevelGreen(Level):
     def __init__(self, width, height, screen):
         super().__init__(width, height, screen)
-        print('green')
-        self.layour_color = 'light green'
-        self.font_color = 'dark green'
+        self.screen = screen
+
+        self.tile_empty = 'empty'
+        self.wall_color = 'wall_dark_green'
+        self.font_color = 'wall_light_green'
+        self.level_name = database.get_black_map()
+        self.load_level(self.level_name)
+
+    def render(self):
+        self.screen.fill(self.layour_color)
+
+
+class Tile(pygame.sprite.Sprite):
+    def __init__(self, tile_type, pos_x, pos_y):
+        super().__init__(black_level_group, green_level_group, red_level_group)
+        self.layour_color = 'black'
+        self.image = tile_images[tile_type]
+        self.rect = self.image.get_rect().move(
+            tile_width * pos_x, tile_height * pos_y)
+        self.abs_pos = (self.rect.x, self.rect.y)
+
+    # def draw(self):
+    #
+    def update(self, font_color='white', layour_color='black', *args):
+        self.layour_color = font_color
+    #     self.draw()
+    #     return [False]
 
 
 class Player(pygame.sprite.Sprite):
-    ghost = pygame.image.load(f"data/images/textures/player/ghost.png")
+    ghost = load_image(f"images/textures/player/ghost.png")
 
-    def __init__(self, *group):
-        super().__init__(*group)
-        self.image = pygame.transform.scale(Player.ghost, (96, 96))
-        self.rect = self.image.get_rect()
-        self.rect.x = 20
-        self.rect.y = 500
-        self.velocity = 4
-        self.hearts_remain = 2
+    def __init__(self, pos_x, pos_y):
+        super().__init__(player_group)
+        self.image = pygame.transform.scale(Player.ghost, (72, 72))
+        self.rect = self.image.get_rect().move(
+            tile_width * pos_x + 5, tile_height * pos_y + 5)
+        self.pos = (pos_x, pos_y)
 
-    def update(self, font_color, layour_color, *args):
-        # if layour_color in ['black', 'dark red', 'dark green']:
-        #     self.image.fill('light blue')
-        # else:
-        #     self.image.fill('blue')
-        pass
+    def move(self, x, y):
+        self.pos = (x, y)
+        self.rect = self.image.get_rect().move(
+            tile_width * x + 5, tile_height * y + 5)
+        self.pos = (x, y)
 
 
-class PlayerBar(pygame.sprite.Sprite):
-    no_heart = pygame.image.load(f"data/images/textures/player/no_heart.png")
-    white_heart = pygame.image.load(f"data/images/textures/player/white_heart.png")
-    black_heart = pygame.image.load(f"data/images/textures/player/black_heart.png")
-    red_heart = pygame.image.load(f"data/images/textures/player/red_heart.png")
-
-    def __init__(self, number, *group):
-        super().__init__(*group)
-
-        self.image = pygame.transform.scale(PlayerBar.black_heart, (64, 64))
-        self.rect = self.image.get_rect()
-        self.rect.x = 20 + 75 * number
-        self.rect.y = 5
-        self.is_active = True
-
-    def update(self, font_color, layour_color, *args):
-        if not self.is_active:
-            self.image = pygame.transform.scale(PlayerBar.no_heart, (64, 64))
-            return
-
-        if layour_color in ['black', 'dark red', 'dark green']:
-            self.image = pygame.transform.scale(PlayerBar.white_heart, (64, 64))
-        else:
-            self.image = pygame.transform.scale(PlayerBar.black_heart, (64, 64))
+# class PlayerBar(pygame.sprite.Sprite):
+#     no_heart = load_image(f"images/textures/player/no_heart.png")
+#     white_heart = load_image(f"images/textures/player/white_heart.png")
+#     black_heart = load_image(f"images/textures/player/black_heart.png")
+#     red_heart = load_image(f"images/textures/player/red_heart.png")
+#
+#     def __init__(self, number, *group):
+#         super().__init__(*group)
+#
+#         self.image = pygame.transform.scale(PlayerBar.black_heart, (64, 64))
+#         self.rect = self.image.get_rect()
+#         self.rect.x = 20 + 75 * number
+#         self.rect.y = 5
+#         self.is_active = True
+#
+#     def update(self, font_color, layour_color, *args):
+#         if not self.is_active:
+#             self.image = pygame.transform.scale(PlayerBar.no_heart, (64, 64))
+#             return
+#
+#         if layour_color in ['black', 'dark red', 'dark green']:
+#             self.image = pygame.transform.scale(PlayerBar.white_heart, (64, 64))
+#         else:
+#             self.image = pygame.transform.scale(PlayerBar.black_heart, (64, 64))
 
 
 class Button(pygame.sprite.Sprite):
@@ -167,48 +259,6 @@ class Button(pygame.sprite.Sprite):
         return [False]
 
 
-class ToPauseButton(Button):
-    pause_img = pygame.image.load("data/images/pause.png")
-
-    def __init__(self, *group):
-        super().__init__(*group)
-        self.image = ToPauseButton.pause_img
-        self.rect = self.image.get_rect()
-        self.rect.x = 1200
-        self.rect.y = 10
-        self.next_window = PauseMenu
-
-
-class ToMenuButton(Button):
-    def __init__(self, *group):
-        super().__init__(*group)
-        self.text = 'Back to menu'
-        self.get_image()
-        self.next_window = StartMenu
-
-    def get_image(self):
-        self.image = pygame.Surface([310, 43])
-        self.rect = self.image.get_rect()
-        self.rect.x = 495
-        self.rect.y = 600
-        self.draw()
-
-
-class RerunToLevelButton(Button):
-    def __init__(self, *group):
-        super().__init__(*group)
-        self.text = 'Resume'
-        self.get_image()
-        self.next_window = Level
-
-    def get_image(self):
-        self.image = pygame.Surface([155, 43])
-        self.rect = self.image.get_rect()
-        self.rect.x = 565
-        self.rect.y = 150
-        self.draw()
-
-
 class StartButton(Button):
     def __init__(self, *group):
         super().__init__(*group)
@@ -224,7 +274,7 @@ class StartButton(Button):
         self.draw()
 
 
-class LevelButton(Button):
+class LevelBtn(Button):
     def __init__(self, number, *group):
         super().__init__(*group)
         self.number = number
@@ -246,10 +296,10 @@ class LevelButton(Button):
 
 
 class SoundButton(pygame.sprite.Sprite):
-    sound_on_white = pygame.image.load(f"data/images/sound_on_white.png")
-    sound_on_black = pygame.image.load(f"data/images/sound_on_black.png")
-    sound_off_white = pygame.image.load(f"data/images/sound_off_white.png")
-    sound_off_black = pygame.image.load(f"data/images/sound_off_black.png")
+    sound_on_white = load_image(f"images/sound_on_white.png")
+    sound_on_black = load_image(f"images/sound_on_black.png")
+    sound_off_white = load_image(f"images/sound_off_white.png")
+    sound_off_black = load_image(f"images/sound_off_black.png")
 
     def __init__(self, *group):
         super().__init__(*group)
@@ -268,7 +318,7 @@ class SoundButton(pygame.sprite.Sprite):
                 self.status = 'off'
             else:
                 self.status = 'on'
-        self.image = pygame.image.load(f"data/images/sound_{self.status}_{self.color}.png")
+        self.image = load_image(f"images/sound_{self.status}_{self.color}.png")
 
 
 main_menu_group = pygame.sprite.Group()
@@ -276,7 +326,9 @@ level_menu_group = pygame.sprite.Group()
 pause_menu_group = pygame.sprite.Group()
 black_level_group = pygame.sprite.Group()
 red_level_group = pygame.sprite.Group()
+map_level_group = pygame.sprite.Group()
 green_level_group = pygame.sprite.Group()
+player_group = pygame.sprite.Group()
 groups_dict = {StartMenu: main_menu_group,
                LevelMenu: level_menu_group,
                PauseMenu: pause_menu_group,
@@ -284,23 +336,38 @@ groups_dict = {StartMenu: main_menu_group,
                LevelGreen: green_level_group,
                LevelBlack: black_level_group}
 
+
+def move(hero, movement, map):
+    # FIXME
+
+    x, y = hero.pos
+    if movement == "up":
+        if y > 0 and map[y - 1][x] == ".":
+            hero.move(x, y - 1)
+    elif movement == "down":
+        # fixme ymax and xmax
+        if y < 700 - 1 and map[y + 1][x] == ".":
+            hero.move(x, y + 1)
+    elif movement == "left":
+        if x > 0 and map[y][x - 1] == ".":
+            hero.move(x - 1, y)
+    elif movement == "right":
+        if x < 1000 - 1 and map[y][x + 1] == ".":
+            hero.move(x + 1, y)
+
+
 if __name__ == '__main__':
     pygame.init()
-    size = width, height = 1280, 720
+    size = width, height = 1000, 1000
     screen = pygame.display.set_mode(size)
-    pygame.display.set_caption('The Edge Between Day And Night')
+    pygame.display.set_caption('Colorless')
     clock = pygame.time.Clock()
     time_on = False
     ticks = 0
 
     for i in range(1, 4):
-        LevelButton(i, level_menu_group)
-    ToMenuButton(level_menu_group, pause_menu_group)
-    SoundButton(main_menu_group, level_menu_group, pause_menu_group)
-    player = Player(black_level_group, green_level_group, red_level_group)
-    return_to_level = RerunToLevelButton(pause_menu_group)
-    ToMenuButton(pause_menu_group)
-    ToPauseButton(black_level_group, green_level_group, red_level_group)
+        LevelBtn(i, level_menu_group)
+    SoundButton(main_menu_group, level_menu_group)
 
     current_window = previous_window = StartMenu(width, height, screen)
     current_group = previous_group = main_menu_group
@@ -308,15 +375,8 @@ if __name__ == '__main__':
     StartButton(main_menu_group)
     current_window.render()
     running = True
-    for i in range(player.hearts_remain):
-        PlayerBar(i, black_level_group, green_level_group, red_level_group)
+    f = 0
     while running:
-
-        if isinstance(current_window, Level):
-            return_to_level.next_window = type(current_window)
-
-        current_group.update(current_window.font_color, current_window.layour_color)
-        current_group.draw(screen)
         changeable_buttons = [i for i in current_group.sprites() if isinstance(i, Button)]
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -340,32 +400,31 @@ if __name__ == '__main__':
                 current_group.update(current_window.font_color, current_window.layour_color, event)
                 current_window.render()
 
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE and previous_window != current_window and \
-                    not isinstance(current_window, Level):
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE and previous_window != current_window:
                 current_window, current_group = previous_window, previous_group
                 current_window.render()
                 current_group.update(current_window.font_color, current_window.layour_color, event)
 
-            if any(pygame.key.get_pressed()) and isinstance(current_window, Level):
-                if pygame.key.get_pressed()[pygame.K_a]:
-                    player.rect.x -= player.velocity
-                if pygame.key.get_pressed()[pygame.K_d]:
-                    player.rect.x += player.velocity
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                    for i in range(1, player.velocity * 2 + 1):
-                        if i <= (player.velocity * 2 + 1) // 2:
-                            player.rect.y -= (player.velocity ** 1.5) * 5
-                        else:
-                            player.rect.y += (player.velocity ** 1.5) * 5
-                        pygame.time.delay(40)
-                        current_window.render()
-                        current_group.draw(screen)
-                        pygame.display.update()
+            if event.type == pygame.KEYDOWN and isinstance(current_window, Level):
+                if event.key == pygame.K_UP:
+                    move(player_group.sprites()[0], "up", current_window.map_level)
+                elif event.key == pygame.K_DOWN:
+                    move(player_group.sprites()[0], "down", current_window.map_level)
+                elif event.key == pygame.K_LEFT:
+                    move(player_group.sprites()[0], "left", current_window.map_level)
+                elif event.key == pygame.K_RIGHT:
+                    move(player_group.sprites()[0], "right", current_window.map_level)
 
-                current_window.render()
-                current_group.draw(screen)
+        current_group.update(current_window.font_color, current_window.layour_color)
+        current_group.draw(screen)
+        if player_group and isinstance(current_window, Level):
+            player_group.draw(screen)
+        elif isinstance(current_window, Level):
+            current_window.generate_level()
+        elif player_group:
+            player_group.sprites()[0].kill()
 
         pygame.display.update()
-        clock.tick(60)
+        clock.tick(FPS)
         ticks += 1
     pygame.quit()
