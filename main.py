@@ -3,7 +3,6 @@ from dbreader import DBreader
 import os
 import sys
 
-
 database = DBreader()
 
 
@@ -27,7 +26,12 @@ screen = pygame.display.set_mode(screen_size)
 FPS = 50
 
 tile_images = {
-    'wall': pygame.transform.scale(load_image('images/textures/black_tile.png'), (80, 80)),
+    'wall_black': pygame.transform.scale(load_image('images/textures/black_tile.png'), (80, 80)),
+    'wall_white': pygame.transform.scale(load_image('images/textures/white_tile.png'), (80, 80)),
+    'wall_dark_red': pygame.transform.scale(load_image('images/textures/dark_red_tile.png'), (80, 80)),
+    'wall_light_red': pygame.transform.scale(load_image('images/textures/light_red_tile.png'), (80, 80)),
+    'wall_dark_green': pygame.transform.scale(load_image('images/textures/dark_green_tile.png'), (80, 80)),
+    'wall_light_green': pygame.transform.scale(load_image('images/textures/light_green_tile.png'), (80, 80)),
     'empty': pygame.transform.scale(load_image('images/textures/grass.png'), (80, 80))
 }
 
@@ -89,11 +93,22 @@ class Level(Window):
         self.current_checkpoint = 0
         self.map_level = []
         self.level_name = ''
+        self.tile_empty = 'empty'
+        self.wall_color = 'wall_black'
+        self.font_color = 'wall_white'
 
     def load_level(self, maps):
         level_map = [line.strip() for line in maps.split('\n')]
         max_width = max(map(len, level_map))
         self.map_level = list(map(lambda x: list(x.ljust(max_width, '.')), level_map))
+
+    def change_color(self):
+        # TODO доделать
+        self.wall_color, self.font_color = self.font_color, self.wall_color
+        for y in range(len(self.map_level)):
+            for x in range(len(self.map_level[y])):
+                if self.map_level[y][x] == '#':
+                    Tile(self.wall_color, x, y)
 
     # чтение и генерация уровней
     def generate_level(self):
@@ -101,11 +116,11 @@ class Level(Window):
         for y in range(len(self.map_level)):
             for x in range(len(self.map_level[y])):
                 if self.map_level[y][x] == '.':
-                    Tile('empty', x, y)
+                    Tile(self.tile_empty, x, y)
                 elif self.map_level[y][x] == '#':
-                    Tile('wall', x, y)
+                    Tile(self.wall_color, x, y)
                 elif self.map_level[y][x] == '@':
-                    Tile('empty', x, y)
+                    Tile(self.tile_empty, x, y)
                     new_player = Player(x, y)
                     self.map_level[y][x] = "."
         return new_player, x, y
@@ -115,6 +130,9 @@ class LevelBlack(Level):
     def __init__(self, width, height, screen):
         super().__init__(width, height, screen)
         self.screen = screen
+        self.tile_empty = 'empty'
+        self.wall_color = 'wall_black'
+        self.font_color = 'wall_white'
         self.level_name = database.get_black_map()
         self.load_level(self.level_name)
 
@@ -125,9 +143,13 @@ class LevelBlack(Level):
 class LevelRed(Level):
     def __init__(self, width, height, screen):
         super().__init__(width, height, screen)
-        print('red')
-        self.layour_color = 'pink'
-        self.font_color = 'dark red'
+        self.screen = screen
+
+        self.tile_empty = 'empty'
+        self.wall_color = 'wall_dark_red'
+        self.font_color = 'wall_light_red'
+        self.level_name = database.get_black_map()
+        self.load_level(self.level_name)
 
     def render(self):
         self.screen.fill(self.layour_color)
@@ -136,9 +158,13 @@ class LevelRed(Level):
 class LevelGreen(Level):
     def __init__(self, width, height, screen):
         super().__init__(width, height, screen)
-        print('green')
-        self.layour_color = 'light green'
-        self.font_color = 'dark green'
+        self.screen = screen
+
+        self.tile_empty = 'empty'
+        self.wall_color = 'wall_dark_green'
+        self.font_color = 'wall_light_green'
+        self.level_name = database.get_black_map()
+        self.load_level(self.level_name)
 
     def render(self):
         self.screen.fill(self.layour_color)
@@ -147,10 +173,18 @@ class LevelGreen(Level):
 class Tile(pygame.sprite.Sprite):
     def __init__(self, tile_type, pos_x, pos_y):
         super().__init__(black_level_group, green_level_group, red_level_group)
+        self.layour_color = 'black'
         self.image = tile_images[tile_type]
         self.rect = self.image.get_rect().move(
             tile_width * pos_x, tile_height * pos_y)
         self.abs_pos = (self.rect.x, self.rect.y)
+
+    # def draw(self):
+    #
+    def update(self, font_color='white', layour_color='black', *args):
+        self.layour_color = font_color
+    #     self.draw()
+    #     return [False]
 
 
 class Player(pygame.sprite.Sprite):
@@ -159,31 +193,15 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
         super().__init__(player_group)
         self.image = pygame.transform.scale(Player.ghost, (72, 72))
-        self.pos = (pos_x, pos_y)
         self.rect = self.image.get_rect().move(
             tile_width * pos_x + 5, tile_height * pos_y + 5)
         self.pos = (pos_x, pos_y)
 
     def move(self, x, y):
-        camera.dx -= tile_width * (x - self.pos[0])
-        camera.dy -= tile_height * (y - self.pos[1])
         self.pos = (x, y)
-        for sprite in black_level_group:
-            camera.apply(sprite)
-
-
-class Camera:
-    def __init__(self):
-        self.dx = 0
-        self.dy = 0
-
-    def apply(self, obj):
-        obj.rect.x = obj.abs_pos[0] + self.dx
-        obj.rect.y = obj.abs_pos[1] + self.dy
-
-    def update(self, target):
-        self.dx = 0
-        self.dy = 0
+        self.rect = self.image.get_rect().move(
+            tile_width * x + 5, tile_height * y + 5)
+        self.pos = (x, y)
 
 
 # class PlayerBar(pygame.sprite.Sprite):
@@ -327,6 +345,7 @@ def move(hero, movement, map):
         if y > 0 and map[y - 1][x] == ".":
             hero.move(x, y - 1)
     elif movement == "down":
+        # fixme ymax and xmax
         if y < 700 - 1 and map[y + 1][x] == ".":
             hero.move(x, y + 1)
     elif movement == "left":
@@ -339,8 +358,7 @@ def move(hero, movement, map):
 
 if __name__ == '__main__':
     pygame.init()
-    camera = Camera()
-    size = width, height = 1280, 720
+    size = width, height = 1000, 1000
     screen = pygame.display.set_mode(size)
     pygame.display.set_caption('Colorless')
     clock = pygame.time.Clock()
@@ -399,10 +417,12 @@ if __name__ == '__main__':
 
         current_group.update(current_window.font_color, current_window.layour_color)
         current_group.draw(screen)
-        if player_group:
+        if player_group and isinstance(current_window, Level):
             player_group.draw(screen)
         elif isinstance(current_window, Level):
             current_window.generate_level()
+        elif player_group:
+            player_group.sprites()[0].kill()
 
         pygame.display.update()
         clock.tick(FPS)
