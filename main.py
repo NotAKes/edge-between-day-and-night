@@ -20,22 +20,19 @@ def load_image(name, color_key=None):
     return image
 
 
-pygame.init()
-screen_size = (400, 400)
-screen = pygame.display.set_mode(screen_size)
 FPS = 50
 
 tile_images = {
-    'wall_black': pygame.transform.scale(load_image('images/textures/black_tile.png'), (80, 80)),
-    'wall_white': pygame.transform.scale(load_image('images/textures/white_tile.png'), (80, 80)),
-    'wall_dark_red': pygame.transform.scale(load_image('images/textures/dark_red_tile.png'), (80, 80)),
-    'wall_light_red': pygame.transform.scale(load_image('images/textures/light_red_tile.png'), (80, 80)),
-    'wall_dark_green': pygame.transform.scale(load_image('images/textures/dark_green_tile.png'), (80, 80)),
-    'wall_light_green': pygame.transform.scale(load_image('images/textures/light_green_tile.png'), (80, 80)),
-    'empty': pygame.transform.scale(load_image('images/textures/grass.png'), (80, 80))
+    'wall_dark': pygame.transform.scale(load_image('images/textures/black_tile.png'), (60, 60)),
+    'wall_light': pygame.transform.scale(load_image('images/textures/white_tile.png'), (60, 60)),
+    'wall_dark_red': pygame.transform.scale(load_image('images/textures/dark_red_tile.png'), (60, 60)),
+    'wall_light_red': pygame.transform.scale(load_image('images/textures/light_red_tile.png'), (60, 60)),
+    'wall_dark_green': pygame.transform.scale(load_image('images/textures/dark_green_tile.png'), (60, 60)),
+    'wall_light_green': pygame.transform.scale(load_image('images/textures/light_green_tile.png'), (60, 60)),
+    'empty': pygame.transform.scale(load_image('images/textures/grass.png'), (60, 60))
 }
 
-tile_width = tile_height = 80
+tile_width = tile_height = 60
 
 
 class Window:
@@ -58,6 +55,9 @@ class Window:
 class StartMenu(Window):
     def __init__(self, width, height, screen):
         super().__init__(width, height, screen)
+        self.width = width
+        self.height = height
+        self.screen = screen
 
     def render(self):
         self.title = self.font_titles.render('Colorless', True, self.font_color)
@@ -80,7 +80,6 @@ class LevelMenu(Window):
         self.title = self.font_titles.render('Level map', True, self.font_color)
         self.screen.fill(self.layour_color)
         self.screen.blit(self.title, (self.width / 2 - self.title.get_width() / 2, 20))
-        pygame.display.update()
 
 
 class PauseMenu(Window):
@@ -93,6 +92,7 @@ class Level(Window):
         self.current_checkpoint = 0
         self.map_level = []
         self.level_name = ''
+        self.mode = 'dark'
         self.tile_empty = 'empty'
         self.wall_color = 'wall_black'
         self.font_color = 'wall_white'
@@ -104,10 +104,18 @@ class Level(Window):
 
     def change_color(self):
         # TODO доделать
+        if self.mode == 'dark':
+            self.mode = 'light'
+        else:
+            self.mode = 'dark'
         self.wall_color, self.font_color = self.font_color, self.wall_color
         for y in range(len(self.map_level)):
             for x in range(len(self.map_level[y])):
                 if self.map_level[y][x] == '#':
+                    Tile(self.wall_color, x, y)
+                if self.map_level[y][x] == 'd' and self.mode == 'dark':
+                    Tile(self.wall_color, x, y)
+                if self.map_level[y][x] == 'l' and self.mode == 'light':
                     Tile(self.wall_color, x, y)
 
     # чтение и генерация уровней
@@ -131,8 +139,8 @@ class LevelBlack(Level):
         super().__init__(width, height, screen)
         self.screen = screen
         self.tile_empty = 'empty'
-        self.wall_color = 'wall_black'
-        self.font_color = 'wall_white'
+        self.wall_color = 'wall_dark'
+        self.font_color = 'wall_light'
         self.level_name = database.get_black_map()
         self.load_level(self.level_name)
 
@@ -192,16 +200,30 @@ class Player(pygame.sprite.Sprite):
 
     def __init__(self, pos_x, pos_y):
         super().__init__(player_group)
-        self.image = pygame.transform.scale(Player.ghost, (72, 72))
+        self.image = pygame.transform.scale(Player.ghost, (57, 57))
         self.rect = self.image.get_rect().move(
-            tile_width * pos_x + 5, tile_height * pos_y + 5)
+            tile_width * pos_x + 2, tile_height * pos_y + 2)
         self.pos = (pos_x, pos_y)
 
     def move(self, x, y):
         self.pos = (x, y)
         self.rect = self.image.get_rect().move(
-            tile_width * x + 5, tile_height * y + 5)
+            tile_width * x + 2, tile_height * y + 2)
         self.pos = (x, y)
+
+
+class Border(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__(black_level_group, green_level_group, red_level_group)
+        self.walls_barrier = 0
+        self.image = pygame.Surface([100, 100])
+        self.rect = self.image.get_rect()
+
+    def draw(self, screen):
+        pygame.draw.rect(screen, 'yellow', (0, 0, 800, self.walls_barrier))
+        pygame.draw.rect(screen, 'yellow', (0, 400 - self.walls_barrier, 800, self.walls_barrier))
+        pygame.draw.rect(screen, 'yellow', (0, 0, self.walls_barrier, 400))
+        pygame.draw.rect(screen, 'yellow', (800 - self.walls_barrier, 0, self.walls_barrier, 400))
 
 
 # class PlayerBar(pygame.sprite.Sprite):
@@ -358,12 +380,15 @@ def move(hero, movement, map):
 
 if __name__ == '__main__':
     pygame.init()
-    size = width, height = 1000, 1000
+    size = width, height = 1200, 1200
     screen = pygame.display.set_mode(size)
     pygame.display.set_caption('Colorless')
     clock = pygame.time.Clock()
     time_on = False
     ticks = 0
+    walls_barrier = 0
+    walls_visible = pygame.USEREVENT + 25
+    pygame.time.set_timer(walls_visible, 300)
 
     for i in range(1, 4):
         LevelBtn(i, level_menu_group)
@@ -375,9 +400,19 @@ if __name__ == '__main__':
     StartButton(main_menu_group)
     current_window.render()
     running = True
+    border = Border()
     f = 0
     while running:
         changeable_buttons = [i for i in current_group.sprites() if isinstance(i, Button)]
+        current_group.update(current_window.font_color, current_window.layour_color)
+        current_group.draw(screen)
+        if player_group and isinstance(current_window, Level):
+            player_group.draw(screen)
+        elif isinstance(current_window, Level):
+            current_window.generate_level()
+        elif player_group:
+            player_group.sprites()[0].kill()
+            walls_barrier = 0
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -415,16 +450,9 @@ if __name__ == '__main__':
                 elif event.key == pygame.K_RIGHT:
                     move(player_group.sprites()[0], "right", current_window.map_level)
 
-        current_group.update(current_window.font_color, current_window.layour_color)
-        current_group.draw(screen)
-        if player_group and isinstance(current_window, Level):
-            player_group.draw(screen)
-        elif isinstance(current_window, Level):
-            current_window.generate_level()
-        elif player_group:
-            player_group.sprites()[0].kill()
+            if event.type == walls_visible:
+                border.walls_barrier += 1
 
         pygame.display.update()
         clock.tick(FPS)
-        ticks += 1
     pygame.quit()
