@@ -214,42 +214,18 @@ class Player(pygame.sprite.Sprite):
 
 class Border(pygame.sprite.Sprite):
     def __init__(self):
-        super().__init__(black_level_group, green_level_group, red_level_group)
+        super().__init__(border_group)
         self.walls_barrier = 0
-        self.image = pygame.Surface([100, 100])
+        self.image = pygame.Surface([1200, 1200], pygame.SRCALPHA, 32)
+        self.image = self.image.convert_alpha()
         self.rect = self.image.get_rect()
+        self.draw()
 
-    def draw(self, screen):
-        pygame.draw.rect(screen, 'yellow', (0, 0, 800, self.walls_barrier))
-        pygame.draw.rect(screen, 'yellow', (0, 400 - self.walls_barrier, 800, self.walls_barrier))
-        pygame.draw.rect(screen, 'yellow', (0, 0, self.walls_barrier, 400))
-        pygame.draw.rect(screen, 'yellow', (800 - self.walls_barrier, 0, self.walls_barrier, 400))
-
-
-# class PlayerBar(pygame.sprite.Sprite):
-#     no_heart = load_image(f"images/textures/player/no_heart.png")
-#     white_heart = load_image(f"images/textures/player/white_heart.png")
-#     black_heart = load_image(f"images/textures/player/black_heart.png")
-#     red_heart = load_image(f"images/textures/player/red_heart.png")
-#
-#     def __init__(self, number, *group):
-#         super().__init__(*group)
-#
-#         self.image = pygame.transform.scale(PlayerBar.black_heart, (64, 64))
-#         self.rect = self.image.get_rect()
-#         self.rect.x = 20 + 75 * number
-#         self.rect.y = 5
-#         self.is_active = True
-#
-#     def update(self, font_color, layour_color, *args):
-#         if not self.is_active:
-#             self.image = pygame.transform.scale(PlayerBar.no_heart, (64, 64))
-#             return
-#
-#         if layour_color in ['black', 'dark red', 'dark green']:
-#             self.image = pygame.transform.scale(PlayerBar.white_heart, (64, 64))
-#         else:
-#             self.image = pygame.transform.scale(PlayerBar.black_heart, (64, 64))
+    def draw(self):
+        pygame.draw.rect(self.image, 'yellow', (0, 0, 1200, self.walls_barrier))
+        pygame.draw.rect(self.image, 'yellow', (0, 1200 - self.walls_barrier, 1200, self.walls_barrier))
+        pygame.draw.rect(self.image, 'yellow', (0, 0, self.walls_barrier, 1200))
+        pygame.draw.rect(self.image, 'yellow', (1200 - self.walls_barrier, 0, self.walls_barrier, 1200))
 
 
 class Button(pygame.sprite.Sprite):
@@ -344,6 +320,7 @@ class SoundButton(pygame.sprite.Sprite):
 
 
 main_menu_group = pygame.sprite.Group()
+border_group = pygame.sprite.Group()
 level_menu_group = pygame.sprite.Group()
 pause_menu_group = pygame.sprite.Group()
 black_level_group = pygame.sprite.Group()
@@ -359,7 +336,7 @@ groups_dict = {StartMenu: main_menu_group,
                LevelBlack: black_level_group}
 
 
-def move(hero, movement, map):
+def move(hero, movement, map, mode):
     # FIXME
 
     x, y = hero.pos
@@ -368,14 +345,15 @@ def move(hero, movement, map):
             hero.move(x, y - 1)
     elif movement == "down":
         # fixme ymax and xmax
-        if y < 700 - 1 and map[y + 1][x] == ".":
+        if y < 1200 and map[y + 1][x] == ".":
             hero.move(x, y + 1)
     elif movement == "left":
         if x > 0 and map[y][x - 1] == ".":
             hero.move(x - 1, y)
     elif movement == "right":
-        if x < 1000 - 1 and map[y][x + 1] == ".":
+        if x < 1200 and map[y][x + 1] == ".":
             hero.move(x + 1, y)
+
 
 
 if __name__ == '__main__':
@@ -396,26 +374,24 @@ if __name__ == '__main__':
 
     current_window = previous_window = StartMenu(width, height, screen)
     current_group = previous_group = main_menu_group
-
+    border = None
     StartButton(main_menu_group)
     current_window.render()
     running = True
-    border = Border()
     f = 0
     while running:
         changeable_buttons = [i for i in current_group.sprites() if isinstance(i, Button)]
-        current_group.update(current_window.font_color, current_window.layour_color)
-        current_group.draw(screen)
-        if player_group and isinstance(current_window, Level):
-            player_group.draw(screen)
-        elif isinstance(current_window, Level):
-            current_window.generate_level()
-        elif player_group:
-            player_group.sprites()[0].kill()
-            walls_barrier = 0
+
+
+
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+
+            if event.type == walls_visible and border:
+                border.walls_barrier += 1
+                border.draw()
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 coords = event.pos
@@ -442,16 +418,26 @@ if __name__ == '__main__':
 
             if event.type == pygame.KEYDOWN and isinstance(current_window, Level):
                 if event.key == pygame.K_UP:
-                    move(player_group.sprites()[0], "up", current_window.map_level)
+                    move(player_group.sprites()[0], "up", current_window.map_level, current_window.mode)
                 elif event.key == pygame.K_DOWN:
-                    move(player_group.sprites()[0], "down", current_window.map_level)
+                    move(player_group.sprites()[0], "down", current_window.map_level, current_window.mode)
                 elif event.key == pygame.K_LEFT:
-                    move(player_group.sprites()[0], "left", current_window.map_level)
+                    move(player_group.sprites()[0], "left", current_window.map_level, current_window.mode)
                 elif event.key == pygame.K_RIGHT:
-                    move(player_group.sprites()[0], "right", current_window.map_level)
+                    move(player_group.sprites()[0], "right", current_window.map_level, current_window.mode)
 
-            if event.type == walls_visible:
-                border.walls_barrier += 1
+        if player_group and isinstance(current_window, Level):
+            player_group.draw(screen)
+            border_group.draw(screen)
+        elif isinstance(current_window, Level):
+            current_window.generate_level()
+            border = Border()
+        elif player_group:
+            player_group.sprites()[0].kill()
+            border_group.sprites()[0].kill()
+
+        current_group.update(current_window.font_color, current_window.layour_color)
+        current_group.draw(screen)
 
         pygame.display.update()
         clock.tick(FPS)
