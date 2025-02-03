@@ -23,15 +23,24 @@ def load_image(name, color_key=None):
 FPS = 50
 
 tile_images = {
-    'wall_dark': pygame.transform.scale(load_image('images/textures/black_tile.png'), (60, 60)),
-    'wall_light': pygame.transform.scale(load_image('images/textures/white_tile.png'), (60, 60)),
-    'wall_dark_red': pygame.transform.scale(load_image('images/textures/dark_red_tile.png'), (60, 60)),
-    'wall_light_red': pygame.transform.scale(load_image('images/textures/light_red_tile.png'), (60, 60)),
-    'wall_dark_green': pygame.transform.scale(load_image('images/textures/dark_green_tile.png'), (60, 60)),
-    'wall_light_green': pygame.transform.scale(load_image('images/textures/light_green_tile.png'), (60, 60)),
+    'wall_dark': pygame.transform.scale(load_image('images/textures/tiles/black_tile.png'), (60, 60)),
+    'wall_light': pygame.transform.scale(load_image('images/textures/tiles/white_tile.png'), (60, 60)),
+    'wall_dark_red': pygame.transform.scale(load_image('images/textures/tiles/dark_red_tile.png'), (60, 60)),
+    'wall_light_red': pygame.transform.scale(load_image('images/textures/tiles/light_red_tile.png'), (60, 60)),
+    'wall_dark_green': pygame.transform.scale(load_image('images/textures/tiles/dark_green_tile.png'), (60, 60)),
+    'wall_light_green': pygame.transform.scale(load_image('images/textures/tiles/light_green_tile.png'), (60, 60)),
+    'black_cracked_wall': pygame.transform.scale(load_image('images/textures/tiles/black_tile_cracked.png'), (60, 60)),
+    'white_cracked_wall': pygame.transform.scale(load_image('images/textures/tiles/white_tile_cracked.png'), (60, 60)),
+    'dark_green_cracked_wall': pygame.transform.scale(load_image('images/textures/tiles/dark_green_tile_cracked.png'),
+                                                      (60, 60)),
+    'light_green_cracked_wall': pygame.transform.scale(load_image('images/textures/tiles/light_green_tile_cracked.png'),
+                                                       (60, 60)),
+    'dark_red_cracked_wall': pygame.transform.scale(load_image('images/textures/tiles/dark_red_tile_cracked.png'),
+                                                    (60, 60)),
+    'light_red_cracked_wall': pygame.transform.scale(load_image('images/textures/tiles/light_red_tile_cracked.png'),
+                                                     (60, 60)),
     'empty': pygame.transform.scale(load_image('images/textures/grass.png'), (60, 60))
 }
-
 tile_width = tile_height = 60
 
 
@@ -92,10 +101,12 @@ class Level(Window):
         self.current_checkpoint = 0
         self.map_level = []
         self.level_name = ''
-        self.mode = 'dark'
+        self.mode = 'd'
         self.tile_empty = 'empty'
         self.wall_color = 'wall_black'
         self.font_color = 'wall_white'
+        self.dark_cracked_wall = 'black_cracked_wall'
+        self.light_cracked_wall = 'white_cracked_wall'
 
     def load_level(self, maps):
         level_map = [line.strip() for line in maps.split('\n')]
@@ -104,18 +115,14 @@ class Level(Window):
 
     def change_color(self):
         # TODO доделать
-        if self.mode == 'dark':
-            self.mode = 'light'
+        if self.mode == 'd':
+            self.mode = 'l'
         else:
-            self.mode = 'dark'
+            self.mode = 'd'
         self.wall_color, self.font_color = self.font_color, self.wall_color
         for y in range(len(self.map_level)):
             for x in range(len(self.map_level[y])):
                 if self.map_level[y][x] == '#':
-                    Tile(self.wall_color, x, y)
-                if self.map_level[y][x] == 'd' and self.mode == 'dark':
-                    Tile(self.wall_color, x, y)
-                if self.map_level[y][x] == 'l' and self.mode == 'light':
                     Tile(self.wall_color, x, y)
 
     # чтение и генерация уровней
@@ -125,6 +132,10 @@ class Level(Window):
             for x in range(len(self.map_level[y])):
                 if self.map_level[y][x] == '.':
                     Tile(self.tile_empty, x, y)
+                elif self.map_level[y][x] == 'l':
+                    Tile(self.dark_cracked_wall, x, y)
+                elif self.map_level[y][x] == 'd':
+                    Tile(self.light_cracked_wall, x, y)
                 elif self.map_level[y][x] == '#':
                     Tile(self.wall_color, x, y)
                 elif self.map_level[y][x] == '@':
@@ -141,6 +152,7 @@ class LevelBlack(Level):
         self.tile_empty = 'empty'
         self.wall_color = 'wall_dark'
         self.font_color = 'wall_light'
+
         self.level_name = database.get_black_map()
         self.load_level(self.level_name)
 
@@ -156,6 +168,9 @@ class LevelRed(Level):
         self.tile_empty = 'empty'
         self.wall_color = 'wall_dark_red'
         self.font_color = 'wall_light_red'
+        self.dark_cracked_wall = 'dark_red_cracked_wall'
+        self.light_cracked_wall = 'light_red_cracked_wall'
+
         self.level_name = database.get_black_map()
         self.load_level(self.level_name)
 
@@ -171,6 +186,8 @@ class LevelGreen(Level):
         self.tile_empty = 'empty'
         self.wall_color = 'wall_dark_green'
         self.font_color = 'wall_light_green'
+        self.dark_cracked_wall = 'dark_green_cracked_wall'
+        self.light_cracked_wall = 'light_green_cracked_wall'
         self.level_name = database.get_black_map()
         self.load_level(self.level_name)
 
@@ -187,12 +204,8 @@ class Tile(pygame.sprite.Sprite):
             tile_width * pos_x, tile_height * pos_y)
         self.abs_pos = (self.rect.x, self.rect.y)
 
-    # def draw(self):
-    #
     def update(self, font_color='white', layour_color='black', *args):
         self.layour_color = font_color
-    #     self.draw()
-    #     return [False]
 
 
 class Player(pygame.sprite.Sprite):
@@ -337,23 +350,20 @@ groups_dict = {StartMenu: main_menu_group,
 
 
 def move(hero, movement, map, mode):
-    # FIXME
-
     x, y = hero.pos
     if movement == "up":
-        if y > 0 and map[y - 1][x] == ".":
+        if y > 0 and (map[y - 1][x] == "." or map[y - 1][x] == mode):
             hero.move(x, y - 1)
     elif movement == "down":
         # fixme ymax and xmax
-        if y < 1200 and map[y + 1][x] == ".":
+        if y < 1200 and (map[y + 1][x] == "." or map[y + 1][x] == mode):
             hero.move(x, y + 1)
     elif movement == "left":
-        if x > 0 and map[y][x - 1] == ".":
+        if x > 0 and (map[y][x - 1] == "." or map[y][x - 1] == mode):
             hero.move(x - 1, y)
     elif movement == "right":
-        if x < 1200 and map[y][x + 1] == ".":
+        if x < 1200 and (map[y][x + 1] == "." or map[y][x + 1] == mode):
             hero.move(x + 1, y)
-
 
 
 if __name__ == '__main__':
@@ -363,7 +373,6 @@ if __name__ == '__main__':
     pygame.display.set_caption('Colorless')
     clock = pygame.time.Clock()
     time_on = False
-    ticks = 0
     walls_barrier = 0
     walls_visible = pygame.USEREVENT + 25
     pygame.time.set_timer(walls_visible, 300)
@@ -381,9 +390,6 @@ if __name__ == '__main__':
     f = 0
     while running:
         changeable_buttons = [i for i in current_group.sprites() if isinstance(i, Button)]
-
-
-
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -426,6 +432,9 @@ if __name__ == '__main__':
                 elif event.key == pygame.K_RIGHT:
                     move(player_group.sprites()[0], "right", current_window.map_level, current_window.mode)
 
+        current_group.update(current_window.font_color, current_window.layour_color)
+        current_group.draw(screen)
+
         if player_group and isinstance(current_window, Level):
             player_group.draw(screen)
             border_group.draw(screen)
@@ -435,9 +444,6 @@ if __name__ == '__main__':
         elif player_group:
             player_group.sprites()[0].kill()
             border_group.sprites()[0].kill()
-
-        current_group.update(current_window.font_color, current_window.layour_color)
-        current_group.draw(screen)
 
         pygame.display.update()
         clock.tick(FPS)
