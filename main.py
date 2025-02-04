@@ -39,8 +39,15 @@ tile_images = {
                                                     (60, 60)),
     'light_red_cracked_wall': pygame.transform.scale(load_image('images/textures/tiles/light_red_tile_cracked.png'),
                                                      (60, 60)),
-    'empty': pygame.transform.scale(load_image('images/textures/grass.png'), (60, 60))
+    'empty': pygame.transform.scale(load_image('images/textures/tiles/road.png'), (60, 60)),
+    'red_gem': pygame.transform.scale(load_image('images/textures/tiles/red_gem.png'), (60, 60)),
+    'green_gem': pygame.transform.scale(load_image('images/textures/tiles/green_gem.png'), (60, 60)),
+    'blue_gem': pygame.transform.scale(load_image('images/textures/tiles/blue_gem.png'), (60, 60))
 }
+gem_types = {'r': 'red_gem',
+             'g': 'green_gem',
+             'b': 'blue_gem'}
+
 tile_width = tile_height = 60
 
 
@@ -91,10 +98,6 @@ class LevelMenu(Window):
         self.screen.blit(self.title, (self.width / 2 - self.title.get_width() / 2, 20))
 
 
-class PauseMenu(Window):
-    pass
-
-
 class Level(Window):
     def __init__(self, width, height, screen):
         super().__init__(width, height, screen)
@@ -102,6 +105,7 @@ class Level(Window):
         self.map_level = []
         self.level_name = ''
         self.mode = 'd'
+        self.gem_type = 'r'
         self.tile_empty = 'empty'
         self.wall_color = 'wall_black'
         self.font_color = 'wall_white'
@@ -132,6 +136,8 @@ class Level(Window):
             for x in range(len(self.map_level[y])):
                 if self.map_level[y][x] == '.':
                     Tile(self.tile_empty, x, y)
+                elif self.map_level[y][x] in '':
+                    GemTile(self.gem_type, x, y)
                 elif self.map_level[y][x] == 'l':
                     Tile(self.dark_cracked_wall, x, y)
                 elif self.map_level[y][x] == 'd':
@@ -142,6 +148,7 @@ class Level(Window):
                     Tile(self.tile_empty, x, y)
                     new_player = Player(x, y)
                     self.map_level[y][x] = "."
+
         return new_player, x, y
 
 
@@ -152,7 +159,7 @@ class LevelBlack(Level):
         self.tile_empty = 'empty'
         self.wall_color = 'wall_dark'
         self.font_color = 'wall_light'
-
+        self.gem_type = 'r'
         self.level_name = database.get_black_map()
         self.load_level(self.level_name)
 
@@ -164,7 +171,7 @@ class LevelRed(Level):
     def __init__(self, width, height, screen):
         super().__init__(width, height, screen)
         self.screen = screen
-
+        self.gem_type = 'g'
         self.tile_empty = 'empty'
         self.wall_color = 'wall_dark_red'
         self.font_color = 'wall_light_red'
@@ -182,7 +189,7 @@ class LevelGreen(Level):
     def __init__(self, width, height, screen):
         super().__init__(width, height, screen)
         self.screen = screen
-
+        self.gem_type = 'b'
         self.tile_empty = 'empty'
         self.wall_color = 'wall_dark_green'
         self.font_color = 'wall_light_green'
@@ -208,6 +215,21 @@ class Tile(pygame.sprite.Sprite):
         self.layour_color = font_color
 
 
+class GemTile(pygame.sprite.Sprite):
+    def __init__(self, tile_type, pos_x, pos_y):
+        super().__init__(black_level_group, green_level_group, red_level_group)
+        self.tile_type = gem_types[tile_type]
+        self.layour_color = 'black'
+        self.image = self.tile_type[tile_type]
+        self.mask = pygame.mask.from_surface(self.image)
+        self.rect = self.image.get_rect().move(
+            tile_width * pos_x, tile_height * pos_y)
+        self.abs_pos = (self.rect.x, self.rect.y)
+
+    def update(self, font_color='white', layour_color='black', *args):
+        self.layour_color = font_color
+
+
 class Player(pygame.sprite.Sprite):
     ghost = load_image(f"images/textures/player/ghost.png")
 
@@ -216,9 +238,11 @@ class Player(pygame.sprite.Sprite):
         self.image = pygame.transform.scale(Player.ghost, (57, 57))
         self.rect = self.image.get_rect().move(
             tile_width * pos_x + 2, tile_height * pos_y + 2)
+        self.mask = pygame.mask.from_surface(self.image)
         self.pos = (pos_x, pos_y)
 
     def move(self, x, y):
+        # if pygame.sprite.collide_mask(self, )
         self.pos = (x, y)
         self.rect = self.image.get_rect().move(
             tile_width * x + 2, tile_height * y + 2)
@@ -335,7 +359,6 @@ class SoundButton(pygame.sprite.Sprite):
 main_menu_group = pygame.sprite.Group()
 border_group = pygame.sprite.Group()
 level_menu_group = pygame.sprite.Group()
-pause_menu_group = pygame.sprite.Group()
 black_level_group = pygame.sprite.Group()
 red_level_group = pygame.sprite.Group()
 map_level_group = pygame.sprite.Group()
@@ -343,7 +366,6 @@ green_level_group = pygame.sprite.Group()
 player_group = pygame.sprite.Group()
 groups_dict = {StartMenu: main_menu_group,
                LevelMenu: level_menu_group,
-               PauseMenu: pause_menu_group,
                LevelRed: red_level_group,
                LevelGreen: green_level_group,
                LevelBlack: black_level_group}
@@ -352,17 +374,17 @@ groups_dict = {StartMenu: main_menu_group,
 def move(hero, movement, map, mode):
     x, y = hero.pos
     if movement == "up":
-        if y > 0 and (map[y - 1][x] == "." or map[y - 1][x] == mode):
+        if y > 0 and (map[y - 1][x] in f'.{mode}'):
             hero.move(x, y - 1)
     elif movement == "down":
         # fixme ymax and xmax
-        if y < 1200 and (map[y + 1][x] == "." or map[y + 1][x] == mode):
+        if y < 1200 and (map[y + 1][x] in f'.{mode}'):
             hero.move(x, y + 1)
     elif movement == "left":
-        if x > 0 and (map[y][x - 1] == "." or map[y][x - 1] == mode):
+        if x > 0 and (map[y][x - 1] in f'.{mode}'):
             hero.move(x - 1, y)
     elif movement == "right":
-        if x < 1200 and (map[y][x + 1] == "." or map[y][x + 1] == mode):
+        if x < 1200 and (map[y][x + 1] in f'.{mode}'):
             hero.move(x + 1, y)
 
 
