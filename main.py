@@ -136,8 +136,8 @@ class Level(Window):
             for x in range(len(self.map_level[y])):
                 if self.map_level[y][x] == '.':
                     Tile(self.tile_empty, x, y)
-                elif self.map_level[y][x] in '':
-                    GemTile(self.gem_type, x, y)
+                elif self.map_level[y][x] in 'rgb':
+                    self.gem = GemTile(self.gem_type, x, y)
                 elif self.map_level[y][x] == 'l':
                     Tile(self.dark_cracked_wall, x, y)
                 elif self.map_level[y][x] == 'd':
@@ -220,7 +220,8 @@ class GemTile(pygame.sprite.Sprite):
         super().__init__(black_level_group, green_level_group, red_level_group)
         self.tile_type = gem_types[tile_type]
         self.layour_color = 'black'
-        self.image = self.tile_type[tile_type]
+        print(self.tile_type)
+        self.image = tile_images[self.tile_type]
         self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect().move(
             tile_width * pos_x, tile_height * pos_y)
@@ -242,7 +243,7 @@ class Player(pygame.sprite.Sprite):
         self.pos = (pos_x, pos_y)
 
     def move(self, x, y):
-        # if pygame.sprite.collide_mask(self, )
+        #
         self.pos = (x, y)
         self.rect = self.image.get_rect().move(
             tile_width * x + 2, tile_height * y + 2)
@@ -374,17 +375,17 @@ groups_dict = {StartMenu: main_menu_group,
 def move(hero, movement, map, mode):
     x, y = hero.pos
     if movement == "up":
-        if y > 0 and (map[y - 1][x] in f'.{mode}'):
+        if y > 0 and (map[y - 1][x] in f'.rgb{mode}'):
             hero.move(x, y - 1)
     elif movement == "down":
         # fixme ymax and xmax
-        if y < 1200 and (map[y + 1][x] in f'.{mode}'):
+        if y < 1200 and (map[y + 1][x] in f'.rgb{mode}'):
             hero.move(x, y + 1)
     elif movement == "left":
-        if x > 0 and (map[y][x - 1] in f'.{mode}'):
+        if x > 0 and (map[y][x - 1] in f'.rgb{mode}'):
             hero.move(x - 1, y)
     elif movement == "right":
-        if x < 1200 and (map[y][x + 1] in f'.{mode}'):
+        if x < 1200 and (map[y][x + 1] in f'.rgb{mode}'):
             hero.move(x + 1, y)
 
 
@@ -396,13 +397,13 @@ if __name__ == '__main__':
     clock = pygame.time.Clock()
     time_on = False
     walls_barrier = 0
-    walls_visible = pygame.USEREVENT + 25
-    pygame.time.set_timer(walls_visible, 300)
+    walls_visible_event = pygame.USEREVENT + 1
+    pygame.time.set_timer(walls_visible_event, 300)
 
     for i in range(1, 4):
         LevelBtn(i, level_menu_group)
     SoundButton(main_menu_group, level_menu_group)
-
+    endgame_event = None
     current_window = previous_window = StartMenu(width, height, screen)
     current_group = previous_group = main_menu_group
     border = None
@@ -417,7 +418,7 @@ if __name__ == '__main__':
             if event.type == pygame.QUIT:
                 running = False
 
-            if event.type == walls_visible and border:
+            if event.type == walls_visible_event and border:
                 border.walls_barrier += 1
                 border.draw()
 
@@ -453,6 +454,8 @@ if __name__ == '__main__':
                     move(player_group.sprites()[0], "left", current_window.map_level, current_window.mode)
                 elif event.key == pygame.K_RIGHT:
                     move(player_group.sprites()[0], "right", current_window.map_level, current_window.mode)
+            if endgame_event and event.type == endgame_event:
+                print('endgame')
 
         current_group.update(current_window.font_color, current_window.layour_color)
         current_group.draw(screen)
@@ -460,9 +463,13 @@ if __name__ == '__main__':
         if player_group and isinstance(current_window, Level):
             player_group.draw(screen)
             border_group.draw(screen)
+            if pygame.sprite.collide_mask(player_group.sprites()[0], current_window.gem):
+                print(123)
         elif isinstance(current_window, Level):
             current_window.generate_level()
             border = Border()
+            endgame_event = pygame.USEREVENT + 2
+            pygame.time.set_timer(endgame_event, 60 * 3 * 1000)
         elif player_group:
             player_group.sprites()[0].kill()
             border_group.sprites()[0].kill()
