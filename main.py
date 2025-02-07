@@ -2,6 +2,7 @@ import pygame
 from dbreader import DBreader
 import os
 import sys
+import time
 
 database = DBreader()
 
@@ -85,7 +86,6 @@ class StartMenu(Window):
                          (self.width / 2 - self.title.get_width() / 2, 20))
         self.screen.blit(self.music_disc, (10, 650))
         self.screen.blit(self.music_label, (70, 656))
-        pygame.display.update()
 
 
 class LevelMenu(Window):
@@ -178,7 +178,7 @@ class LevelRed(Level):
         self.dark_cracked_wall = 'dark_red_cracked_wall'
         self.light_cracked_wall = 'light_red_cracked_wall'
 
-        self.level_name = database.get_black_map()
+        self.level_name = database.get_red_map()
         self.load_level(self.level_name)
 
     def render(self):
@@ -195,7 +195,7 @@ class LevelGreen(Level):
         self.font_color = 'wall_light_green'
         self.dark_cracked_wall = 'dark_green_cracked_wall'
         self.light_cracked_wall = 'light_green_cracked_wall'
-        self.level_name = database.get_black_map()
+        self.level_name = database.get_green_map()
         self.load_level(self.level_name)
 
     def render(self):
@@ -357,6 +357,17 @@ class SoundButton(pygame.sprite.Sprite):
         self.image = load_image(f"images/sound_{self.status}_{self.color}.png")
 
 
+class Timer:
+    def __init__(self):
+        self.start = time.perf_counter()
+
+    def restart(self):
+        self.start = time.perf_counter()
+
+    def get_time(self):
+        return round(time.perf_counter() - self.start)
+
+
 main_menu_group = pygame.sprite.Group()
 border_group = pygame.sprite.Group()
 level_menu_group = pygame.sprite.Group()
@@ -456,6 +467,7 @@ if __name__ == '__main__':
                     move(player_group.sprites()[0], "right", current_window.map_level, current_window.mode)
             if endgame_event and event.type == endgame_event:
                 print('endgame')
+                print(timer.get_time())
 
         current_group.update(current_window.font_color, current_window.layour_color)
         current_group.draw(screen)
@@ -469,7 +481,8 @@ if __name__ == '__main__':
             current_window.generate_level()
             border = Border()
             endgame_event = pygame.USEREVENT + 2
-            pygame.time.set_timer(endgame_event, 60 * 3 * 1000)
+            pygame.time.set_timer(endgame_event, 60 * 3 * 10)
+            timer = Timer()
         elif player_group:
             player_group.sprites()[0].kill()
             border_group.sprites()[0].kill()
