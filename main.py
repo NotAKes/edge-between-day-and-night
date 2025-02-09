@@ -92,7 +92,7 @@ class StartMenu(Window):
         self.title = self.font_titles.render('Colorless', True, self.font_color)
         self.music_disc = load_image("images/music_disc.png")
         ## TODO сделать запрос на трек
-        self.music_label = self.font_regular.render('Track_Title - Author', True, self.font_color)
+        self.music_label = self.font_regular.render('Clement Panchout - Jelly Blob', True, self.font_color)
         self.screen.fill(self.layour_color)
         self.screen.blit(self.title,
                          (self.width / 2 - self.title.get_width() / 2, 20))
