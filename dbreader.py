@@ -1,29 +1,29 @@
 import sqlite3
 
 
+# класс чтения/записи бд
 class DBreader:
+
     def __init__(self):
-        self.sound = None
-        self.con = sqlite3.connect('data/database.db')
+        self.con = sqlite3.connect('data/database.db')  # подключаемся
+        self.id = 1  # айди игрока
 
-    def get_track(self):
-        self.sound = self.con.cursor().execute(f""" pass """).fetchone()
+    # получаем лучшие резы по уровням
+    def get_best(self, level):
+        best = self.con.cursor().execute(f"""SELECT {level}_best from player WHERE id = {self.id} """).fetchone()
+        return best[0]
 
-    def red_aviable(self):
-        is_red_aviable = self.con.cursor().execute(f""" pass """).fetchone()
-        return is_red_aviable
+    # проверяем резы по уровням
+    def check_best(self, time, level):
+        best = self.con.cursor().execute(f"""SELECT {level}_best from player WHERE id = {self.id} """).fetchone()
+        print(best)
+        if best[0] > time:
+            self.con.cursor().execute(f"""UPDATE player
+                                        SET {level}_best = {time}
+                                        WHERE id = {self.id} """).fetchall()
+            self.con.commit()
 
-    def green_aviable(self):
-        is_green_aviable = self.con.cursor().execute(f""" pass """).fetchone()
-        return is_green_aviable
-
-    def get_best(self):
-        best = self.con.cursor().execute(f""" pass """).fetchone()
-        return best
-
-    def check_best(self, time):
-        best = self.con.cursor().execute(f""" pass """).fetchone()
-
+    # получаем карты уровней
     def get_black_map(self):
         best = self.con.cursor().execute(f'''SELECT level_map from maps WHERE type = "black" ''').fetchone()
         return best[0]
@@ -35,7 +35,3 @@ class DBreader:
     def get_green_map(self):
         best = self.con.cursor().execute(f'''SELECT level_map from maps WHERE type = "green" ''').fetchone()
         return best[0]
-
-
-db = DBreader()
-print(db.get_black_map())
