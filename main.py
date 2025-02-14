@@ -86,11 +86,11 @@ class StartMenu(Window):
         self.width = width
         self.height = height
         self.screen = screen
+        self.music_disc = load_image("images/music_disc.png")
 
     # рендерим надписи из шрифтов
     def render(self):
         self.title = self.font_titles.render('Colorless', True, self.font_color)
-        self.music_disc = load_image("images/music_disc.png")
         ## TODO сделать запрос на трек
         self.music_label = self.font_regular.render('Clement Panchout - Jelly Blob', True, self.font_color)
         self.screen.fill(self.layour_color)
@@ -477,7 +477,7 @@ class SoundButton(pygame.sprite.Sprite):
     sound_off_black = load_image(f"images/sound_off_black.png")
 
     def __init__(self):
-        super().__init__(main_menu_group, level_menu_group)
+        super().__init__(main_menu_group)
         # грузим статус и цвет
         self.color = 'white'
         self.status = 'on'
@@ -496,6 +496,28 @@ class SoundButton(pygame.sprite.Sprite):
             else:
                 self.status = 'on'
         self.image = load_image(f"images/sound_{self.status}_{self.color}.png")
+
+
+class DecorativeGhost(pygame.sprite.Sprite):
+    # подгружаем текстурку
+    ghost = load_image(f"images/textures/player/ghost.png")
+
+    def __init__(self):
+        super().__init__(main_menu_group, level_menu_group, lose_group, victory_group)
+        # рисуем, двигаем
+        self.pos_x = 1
+        self.pos_y = 462
+        self.direction = 1
+        self.image = pygame.transform.scale(DecorativeGhost.ghost, (57, 57))
+        self.rect = self.image.get_rect().move(self.pos_x, self.pos_y)
+
+    def update(self, font_color, layout_color, *args):
+        # если у края, то меняем текстурку и направление
+        if self.pos_x > 1150 or self.pos_x <= 0:
+            self.direction *= (-1)
+            self.image = pygame.transform.flip(self.image, True, False)
+        self.pos_x += 2 * self.direction
+        self.rect = self.image.get_rect().move(self.pos_x, self.pos_y)
 
 
 # Таймер для счёта
@@ -567,7 +589,7 @@ if __name__ == '__main__':
     #  кнопки уровней
     for i in range(1, 4):
         LevelButton(i)
-    sound_button = SoundButton()  # кнопка звука
+    sound_button = SoundButton() # кнопка звука
     endgame_event = None  # евент для конца игры
     # создаем стартовое окно и группу
     current_window = previous_window = StartMenu(width, height, screen)
@@ -575,6 +597,7 @@ if __name__ == '__main__':
     # задаток бордера
     border = None
     # добавляем кнопки
+    DecorativeGhost()
     StartButton(main_menu_group)
     BackToStart()
     BackToLevelMenuButton()
@@ -654,8 +677,10 @@ if __name__ == '__main__':
                 current_group.update(current_window.font_color, current_window.layour_color, event)
                 current_window.render()
         # апдейтим группы
+        current_window.render()
         current_group.update(current_window.font_color, current_window.layour_color)
         current_group.draw(screen)
+
 
         # если сейчас уровень и группы есть, то рисуем их
         if player_group and isinstance(current_window, Level):
@@ -683,7 +708,6 @@ if __name__ == '__main__':
             main_channel.play(music_menu, loops=-1)
             player_group.sprites()[0].kill()
             border_group.sprites()[0].kill()
-
         # апдейт и тикаем
         pygame.display.update()
         clock.tick(FPS)
