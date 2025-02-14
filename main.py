@@ -91,7 +91,6 @@ class StartMenu(Window):
     # рендерим надписи из шрифтов
     def render(self):
         self.title = self.font_titles.render('Colorless', True, self.font_color)
-        ## TODO сделать запрос на трек
         self.music_label = self.font_regular.render('Clement Panchout - Jelly Blob', True, self.font_color)
         self.screen.fill(self.layour_color)
         self.screen.blit(self.title,
@@ -296,7 +295,6 @@ class GemTile(pygame.sprite.Sprite):
         super().__init__(black_level_group, green_level_group, red_level_group)
         self.tile_type = gem_types[tile_type]
         self.layour_color = 'black'
-        print(self.tile_type)
         self.image = tile_images[self.tile_type]
         self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect().move(
